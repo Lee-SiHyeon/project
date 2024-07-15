@@ -11,9 +11,12 @@ char stack[STACK_SIZE] __attribute__((__aligned__(8)));
 volatile TCB* current_tcb;
 volatile TCB* next_tcb;
 volatile TCB** p_current_tcb;
+
+Queue priorityQueues[MAX_PRIORITY];
 /* Function */
 void OS_Init(void)
 {
+	initScheduler();
 	int i;
 	for(i=0; i<MAX_TCB; i++)
 	{
@@ -69,7 +72,12 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 
 	ptcb->prio = prio;
 	ptcb->state = STATE_READY;
+	ptcb->next = 0;
 	ptcb->idx_tcb = idx_tcb-1;
+    if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
+        return 0;
+    enqueue(&priorityQueues[ptcb->prio], ptcb);
+
 
 	return ptcb->no_task;
 }
@@ -90,7 +98,62 @@ void OS_Scheduler_Start(void)
 	{
 		NVIC_SetPriority(i, 0xe);
 	}
+	SysTick_OS_Tick(1000);
 	_OS_Start_First_Task();
 	Uart1_Printf("sihyeon\n");
-	
+}
+
+// 큐 초기화
+void initQueue(Queue* q) {
+    q->front = q->rear = 0;
+}
+
+// 스케줄러 초기화
+void initScheduler() {
+    int i;
+	for (i = 0; i < MAX_PRIORITY; i++) {
+        initQueue(&priorityQueues[i]);
+    }
+}
+
+// 큐가 비어있는지 확인
+int isQueueEmpty(Queue* q) {
+    return q->front == 0;
+}
+
+// 큐에 task 추가
+void enqueue(Queue* q, TCB* task) {
+    if (q->rear == 0) {
+        q->front = q->rear = task;
+    } else {
+        q->rear->next = task;
+        q->rear = task;
+    }
+    task->next = 0;
+}
+
+// 큐에서 task 제거
+TCB* dequeue(Queue* q) {
+    if (isQueueEmpty(q)) {
+        return 0;
+    }
+    TCB* task = q->front;
+    q->front = q->front->next;
+    if (q->front == 0) {
+        q->rear = 0;
+    }
+    return task;
+}
+
+// 다음 실행할 task 가져오기
+TCB* getNextTask() {
+	int i;
+    for (i = 0; i < MAX_PRIORITY; i++) {
+        if (!isQueueEmpty(&priorityQueues[i])) {
+            TCB* task = dequeue(&priorityQueues[i]);
+            enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
+            return task;
+        }
+    }
+    return 0; // 실행할 task가 없음
 }

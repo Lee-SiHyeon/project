@@ -18,6 +18,18 @@ void Task1(void *para)
 		next_tcb = &tcb[1];
 		SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 		for(i=0;i<0x100000;i++);
+		if(systick_flag)
+		{
+			Uart_Printf("here!");
+			TCB* task = getNextTask();
+			if (task != 0) {
+				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
+			} else {
+				Uart_Printf("No task to execute\n");
+			}
+			next_tcb = task;
+			SCB->ICSR |= (1<<SCB_ICSR_PENDSVSET_Pos);
+		}
 	}
 }
 
@@ -29,6 +41,18 @@ void Task2(void *para)
 		next_tcb = &tcb[2];
 		SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 		for(i=0;i<0x100000;i++);
+		if(systick_flag)
+		{
+			Uart_Printf("here!");
+			TCB* task = getNextTask();
+			if (task != 0) {
+				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
+			} else {
+				Uart_Printf("No task to execute\n");
+			}
+			next_tcb = task;
+			SCB->ICSR |= (1<<SCB_ICSR_PENDSVSET_Pos);
+		}
 	}
 	
 }
@@ -42,8 +66,22 @@ void Task3(void *para)
 		next_tcb = &tcb[0];
 		SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 		for(i=0;i<0x100000;i++);
+		if(systick_flag)
+		{
+			Uart_Printf("here!\n");
+			TCB* task = getNextTask();
+			if (task != 0) {
+				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
+			} else {
+				Uart_Printf("No task to execute\n");
+			}
+			next_tcb = task;
+			SCB->ICSR |= (1<<SCB_ICSR_PENDSVSET_Pos);
+			Uart_Printf("here!\n");
+		}
 	}
 }
+
 
 void Main(void)
 {
