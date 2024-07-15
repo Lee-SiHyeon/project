@@ -5,9 +5,10 @@
 
 	.align 4
 
-	.extern current_tcb
-	.extern next_tcb
-	.extern p_current_tcb
+	.extern current_tcb		//OS.c
+	.extern next_tcb		//OS.c
+	.extern p_current_tcb   //OS.c
+	.extern _OS_scheduler //OS.c
 	.global PendSV_Handler
 	.type 	PendSV_Handler, %function
 PendSV_Handler:
@@ -21,9 +22,9 @@ PendSV_Handler:
     STR     R0, [R1]                        // 업데이트된 스택 포인터를 현재 TCB에 저장
 
     // 다음 실행할 태스크를 결정
-    //PUSH    {LR}                            // LR을 스택에 저장
-    //BL      @impl 태스크 결정 branch               // vTaskSwitchContext 함수 호출
-    //POP     {LR}                            // LR을 스택에서 복원
+    PUSH    {r0,LR}                            // LR을 스택에 저장
+	BL 		_OS_scheduler					// call _OS_scheduler
+    POP     {r0,LR}                            // LR을 스택에서 복원
 
     // 다음 태스크의 컨텍스트를 복원
     LDR     R1, =next_tcb               // next_tcb 주소를 R1에 로드 @impl next_tcb 선언 및 사용해야함.

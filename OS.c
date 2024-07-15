@@ -16,7 +16,9 @@ Queue priorityQueues[MAX_PRIORITY];
 /* Function */
 void OS_Init(void)
 {
-	initScheduler();
+
+	_OS_initScheduler();
+
 	int i;
 	for(i=0; i<MAX_TCB; i++)
 	{
@@ -100,7 +102,6 @@ void OS_Scheduler_Start(void)
 	}
 	SysTick_OS_Tick(1000);
 	_OS_Start_First_Task();
-	Uart1_Printf("sihyeon\n");
 }
 
 // 큐 초기화
@@ -109,7 +110,7 @@ void initQueue(Queue* q) {
 }
 
 // 스케줄러 초기화
-void initScheduler() {
+void _OS_initScheduler() {
     int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
         initQueue(&priorityQueues[i]);
@@ -146,7 +147,7 @@ TCB* dequeue(Queue* q) {
 }
 
 // 다음 실행할 task 가져오기
-TCB* getNextTask() {
+TCB* _OS_getNextTask() {
 	int i;
     for (i = 0; i < MAX_PRIORITY; i++) {
         if (!isQueueEmpty(&priorityQueues[i])) {
@@ -156,4 +157,23 @@ TCB* getNextTask() {
         }
     }
     return 0; // 실행할 task가 없음
+}
+
+/*
+param: void
+return : void
+description :
+ determine the next_tcb.
+ if there is no next_tcb, current_tcb will be executed repeatly.
+*/
+void _OS_scheduler(void){
+	TCB* task = 0;
+	task = _OS_getNextTask();
+	if (task == 0){
+		next_tcb = current_tcb;
+	}else{
+		next_tcb = task;
+	}
+	//return to PendSV_Handler
+	return;
 }

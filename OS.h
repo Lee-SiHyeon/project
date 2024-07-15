@@ -44,10 +44,12 @@
 	extern int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_stack);
 	extern void OS_Scheduler_Start(void);
 
+	TCB* _OS_getNextTask();
+	void _OS_initScheduler();
+	
 	void initQueue(Queue* q);
-	void initScheduler();
 	int isQueueEmpty(Queue* q);
 	void enqueue(Queue* q, TCB* task);
 	TCB* dequeue(Queue* q);
-	TCB* getNextTask();
+	
 #endif

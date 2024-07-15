@@ -176,7 +176,7 @@ void DebugMon_Handler(void)
 volatile int systick_flag = 0;
 void SysTick_Handler(void)
 {
-	systick_flag = 1;
+	SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 }
 
 /*******************************************************************************

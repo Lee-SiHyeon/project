@@ -11,6 +11,17 @@ void LED_Display(unsigned int num)
 {
 	Macro_Write_Block(GPIOB->ODR, 0x3, (~num & 3), 8);
 }
+void LED_0_Only_On(void)
+{
+	Macro_Set_Area(GPIOB->ODR, 0x3, 8);
+	GPIOB->ODR &= ~(0x1<<8);
+}
+
+void LED_1_Only_On(void)
+{
+	Macro_Set_Area(GPIOB->ODR, 0x3, 8);
+	GPIOB->ODR &= ~(0x1<<9);
+}
 
 void LED_All_On(void)
 {

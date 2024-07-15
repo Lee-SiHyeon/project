@@ -24,15 +24,11 @@ void System_Init(void)
 	// Device �ʱ�ȭ
 	Uart1_Init(115200); // Uart1 ��ġ �ʱ�ȭ
 	Uart1_RX_Interrupt_Enable(1); // Uart1 RX �̺�Ʈ interrupt Ȱ��ȭ
-	Uart_Printf("Uart enable done\n");
 	Key_Poll_Init();	// Key(LCD ������ Ű) �ʱ�ȭ
 	Key_ISR_Enable(1);	// Key push �̺�Ʈ  interrupt Ȱ��ȭ
-
 	TIM4_Repeat_Interrupt_Enable(1, 5000);
 	Lcd_Init();	// LCD �ʱ�ȭ
-	SysTick_OS_Tick(1);
 	LED_Init();	// LED �ʱ�ȭ
-
 	SCB->VTOR = 0x08003000;
 	SCB->SHCSR = 7<<16;
 	SCB->AIRCR = 0x05FA0000;
