@@ -8,7 +8,7 @@
 	.extern current_tcb		//OS.c
 	.extern next_tcb		//OS.c
 	.extern p_current_tcb   //OS.c
-	.extern _OS_scheduler //OS.c
+	.extern _OS_Scheduler //OS.c
 	.global PendSV_Handler
 	.type 	PendSV_Handler, %function
 PendSV_Handler:
@@ -23,7 +23,7 @@ PendSV_Handler:
 
     // 다음 실행할 태스크를 결정
     PUSH    {r0,LR}                            // LR을 스택에 저장
-	BL 		_OS_scheduler					// call _OS_scheduler
+	BL 		_OS_Scheduler					// call _OS_scheduler
     POP     {r0,LR}                            // LR을 스택에서 복원
 
     // 다음 태스크의 컨텍스트를 복원

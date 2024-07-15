@@ -1,5 +1,6 @@
 #include "device_driver.h"
 #include "OS.h"
+#include "queue.h"
 
 extern TCB* next_tcb;
 extern TCB* current_tcb;
@@ -10,7 +11,6 @@ extern volatile int systick_flag;
 void Task1(void *para)
 {
 	volatile int i =0;
-//	unsigned int cnt =0;
 	for(;;)
 	{
 		LED_0_Only_On();
@@ -49,7 +49,6 @@ void Main(void)
 	OS_Create_Task_Simple(Task1, (void*)0, 5, 1024); 
 	OS_Create_Task_Simple(Task2, (void*)0, 5, 1024); 
 	OS_Create_Task_Simple(Task3, (void*)0, 5, 1024); 
-	
 
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 

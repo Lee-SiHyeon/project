@@ -1,5 +1,6 @@
 #include "device_driver.h"
 #include "OS.h"
+#include "queue.h"
 
 // 참고 : 최초 제공된 코드는 완전한 코드가 아님
 //      그러므로 추후 RTOS 설계에 따라 보완이 필요함
@@ -17,13 +18,21 @@ Queue priorityQueues[MAX_PRIORITY];
 void OS_Init(void)
 {
 
-	_OS_initScheduler();
+	_OS_Init_Scheduler();
 
 	int i;
 	for(i=0; i<MAX_TCB; i++)
 	{
 		tcb[i].no_task = i;
 	}
+}
+
+// 스케줄러 초기화
+void _OS_Init_Scheduler() {
+    int i;
+	for (i = 0; i < MAX_PRIORITY; i++) {
+        Init_Queue(&priorityQueues[i]);
+    }
 }
 
 char* _OS_Get_Stack(int size){
@@ -75,10 +84,9 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	ptcb->prio = prio;
 	ptcb->state = STATE_READY;
 	ptcb->next = 0;
-	ptcb->idx_tcb = idx_tcb-1;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
-    enqueue(&priorityQueues[ptcb->prio], ptcb);
+    Enqueue(&priorityQueues[ptcb->prio], ptcb);
 
 
 	return ptcb->no_task;
@@ -104,55 +112,13 @@ void OS_Scheduler_Start(void)
 	_OS_Start_First_Task();
 }
 
-// 큐 초기화
-void initQueue(Queue* q) {
-    q->front = q->rear = 0;
-}
-
-// 스케줄러 초기화
-void _OS_initScheduler() {
-    int i;
-	for (i = 0; i < MAX_PRIORITY; i++) {
-        initQueue(&priorityQueues[i]);
-    }
-}
-
-// 큐가 비어있는지 확인
-int isQueueEmpty(Queue* q) {
-    return q->front == 0;
-}
-
-// 큐에 task 추가
-void enqueue(Queue* q, TCB* task) {
-    if (q->rear == 0) {
-        q->front = q->rear = task;
-    } else {
-        q->rear->next = task;
-        q->rear = task;
-    }
-    task->next = 0;
-}
-
-// 큐에서 task 제거
-TCB* dequeue(Queue* q) {
-    if (isQueueEmpty(q)) {
-        return 0;
-    }
-    TCB* task = q->front;
-    q->front = q->front->next;
-    if (q->front == 0) {
-        q->rear = 0;
-    }
-    return task;
-}
-
 // 다음 실행할 task 가져오기
-TCB* _OS_getNextTask() {
+TCB* _OS_Get_NextTask() {
 	int i;
     for (i = 0; i < MAX_PRIORITY; i++) {
-        if (!isQueueEmpty(&priorityQueues[i])) {
-            TCB* task = dequeue(&priorityQueues[i]);
-            enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
+        if (!Is_Queue_Empty(&priorityQueues[i])) {
+            TCB* task = Dequeue(&priorityQueues[i]);
+            Enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
             return task;
         }
     }
@@ -166,9 +132,9 @@ description :
  determine the next_tcb.
  if there is no next_tcb, current_tcb will be executed repeatly.
 */
-void _OS_scheduler(void){
+void _OS_Scheduler(void){
 	TCB* task = 0;
-	task = _OS_getNextTask();
+	task = _OS_Get_NextTask();
 	if (task == 0){
 		next_tcb = current_tcb;
 	}else{
