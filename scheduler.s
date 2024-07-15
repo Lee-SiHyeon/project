@@ -32,6 +32,7 @@ PendSV_Handler:
     LDMFD   R0!, {R4-R11}                   // R4-R11 레지스터를 스택에서 복원
     MSR     PSP, R0                         // 프로세스 스택 포인터를 업데이트
 
+	// restore 이후 current_tcb=next_tcb가 되어야함.
 	LDR		R0, =p_current_tcb
 	LDR		R1, =next_tcb
 	LDR     R0, [R0]
