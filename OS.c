@@ -115,11 +115,18 @@ void OS_Scheduler_Start(void)
 // 다음 실행할 task 가져오기
 TCB* _OS_Get_NextTask() {
 	int i;
-    for (i = 0; i < MAX_PRIORITY; i++) {
+	for (i = 0; i < MAX_PRIORITY; i++) {
         if (!Is_Queue_Empty(&priorityQueues[i])) {
-            TCB* task = Dequeue(&priorityQueues[i]);
-            Enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
-            return task;
+			TCB* initTask = Dequeue(&priorityQueues[i]);
+            TCB* task = initTask;
+			do{
+                if (task->state == STATE_READY) {
+                    Enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
+                    return task;
+                }
+                Enqueue(&priorityQueues[i], task); // 다시 큐에 넣어줌
+                task = Dequeue(&priorityQueues[i]);
+            } while(initTask != task);
         }
     }
     return 0; // 실행할 task가 없음
