@@ -29,24 +29,10 @@
 		struct _tcb* next;
 	}TCB;
 
-	#define MAX_PRIORITY 10
-	#define MAX_TASKS 100
-
-	typedef struct Queue {
-		TCB* front;
-		TCB* rear;
-	} Queue;
 	/* [ Macro ] */
 
 	/* [ Function ] */
 	extern void OS_Init(void);
 	extern int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_stack);
 	extern void OS_Scheduler_Start(void);
-
-	void initQueue(Queue* q);
-	void initScheduler();
-	int isQueueEmpty(Queue* q);
-	void enqueue(Queue* q, TCB* task);
-	TCB* dequeue(Queue* q);
-	TCB* getNextTask();
 #endif

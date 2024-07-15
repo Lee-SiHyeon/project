@@ -1,5 +1,6 @@
 #include "device_driver.h"
 #include "OS.h"
+#include "queue.h"
 
 extern TCB* next_tcb;
 extern TCB* current_tcb;
@@ -20,7 +21,7 @@ void Task1(void *para)
 		for(i=0;i<0x100000;i++);
 		if(systick_flag)
 		{
-			TCB* task = getNextTask();
+			TCB* task = get_next_task();
 			if (task != 0) {
 				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
 			} else {
@@ -42,7 +43,7 @@ void Task2(void *para)
 		for(i=0;i<0x100000;i++);
 		if(systick_flag)
 		{
-			TCB* task = getNextTask();
+			TCB* task = get_next_task();
 			if (task != 0) {
 				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
 			} else {
@@ -66,7 +67,7 @@ void Task3(void *para)
 		for(i=0;i<0x100000;i++);
 		if(systick_flag)
 		{
-			TCB* task = getNextTask();
+			TCB* task = get_next_task();
 			if (task != 0) {
 				Uart_Printf("no_task: %d, priority: %d\n", task->no_task, task->prio);
 			} else {
