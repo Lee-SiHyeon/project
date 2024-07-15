@@ -26,7 +26,6 @@
 		int no_task;					// task ��ȣ (tcb �迭�� index)
 		int prio;						// task�� priority
 		int state;						// task�� ����
-		int idx_tcb;
 		struct _tcb* next;
 	}TCB;
 

@@ -72,8 +72,8 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 
 	ptcb->prio = prio;
 	ptcb->state = STATE_READY;
+
 	ptcb->next = 0;
-	ptcb->idx_tcb = idx_tcb-1;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
     enqueue(&priorityQueues[ptcb->prio], ptcb);
@@ -100,7 +100,6 @@ void OS_Scheduler_Start(void)
 	}
 	SysTick_OS_Tick(1000);
 	_OS_Start_First_Task();
-	Uart1_Printf("sihyeon\n");
 }
 
 // 큐 초기화
@@ -150,9 +149,16 @@ TCB* getNextTask() {
 	int i;
     for (i = 0; i < MAX_PRIORITY; i++) {
         if (!isQueueEmpty(&priorityQueues[i])) {
-            TCB* task = dequeue(&priorityQueues[i]);
-            enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
-            return task;
+			TCB* initTask = dequeue(&priorityQueues[i]);
+            TCB* task = initTask;
+			do{
+                if (task->state == STATE_READY) {
+                    enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
+                    return task;
+                }
+                enqueue(&priorityQueues[i], task); // 다시 큐에 넣어줌
+                task = dequeue(&priorityQueues[i]);
+            } while(initTask != task);
         }
     }
     return 0; // 실행할 task가 없음

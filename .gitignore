@@ -1,0 +1,14 @@
+# Ignore .txt files
+*.txt
+
+# Ignore .o files
+*.o
+
+# Ignore .bin files
+*.bin
+
+# Ignore .elf files
+*.elf
+
+# Ignore .map files
+*.map
