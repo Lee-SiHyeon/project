@@ -89,6 +89,7 @@ void Main(void)
 	// Thread mode
 	// Thread mode�� ���� : Priviliged
 	// Thread mode�� MSP ��� : ���� RTOS�� �ʱ�ȭ ������ ���� �����Ƿ� MSP ����ϸ� ����, ���� Task �ڵ� ���� �� PSP ������� ��ȯ
+	Uart_Printf("test\n");
 
 	Uart_Printf("M3-Mini RTOS\n");
 
