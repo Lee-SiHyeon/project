@@ -9,6 +9,8 @@
 	.extern next_tcb		//OS.c
 	.extern p_current_tcb   //OS.c
 	.extern _OS_Scheduler //OS.c
+	.extern _OS_Scheduler_Before_Context_CB
+	.extern _OS_Scheduler_After_Context_CB
 	.global PendSV_Handler
 	.type 	PendSV_Handler, %function
 PendSV_Handler:
@@ -26,6 +28,13 @@ PendSV_Handler:
 	BL 		_OS_Scheduler					// call _OS_scheduler
     POP     {r0,LR}                            // LR을 스택에서 복원
 
+	// Current TCB에 대한 조작 필요시 사용
+	LDR 	R0, =current_tcb
+	LDR 	R0, [R0]
+	PUSH	{r4,lr}
+	BL 		_OS_Scheduler_Before_Context_CB //in OS.c
+	POP		{r4,lr}
+
     // 다음 태스크의 컨텍스트를 복원
     LDR     R1, =next_tcb               // next_tcb 주소를 R1에 로드 @impl next_tcb 선언 및 사용해야함.
     LDR     R1, [R1]                        // next_tcb 값을 R1에 로드
@@ -38,8 +47,15 @@ PendSV_Handler:
 	LDR		R1, =next_tcb
 	LDR     R0, [R0]
 	LDR     R1, [R1]
-
 	STR     R1, [R0]
+
+	// Next TCB에 대한 조작 필요시 사용
+	LDR 	R0, =next_tcb
+	LDR 	R0, [R0]
+	PUSH	{r4,lr}
+	BL 		_OS_Scheduler_After_Context_CB // in OS.c
+	POP		{r4,lr}
+
 
     // 인터럽트 종료
 	ORR 	LR, LR, #0xd
@@ -53,6 +69,12 @@ SVC_Handler:
 	LDR		R0, [R1] @ current_tcb 의 시작주소 ==> top_of_stack를 가져와서
 	LDMIA	R0!, {R4-R11} @ top_of_state
 	MSR		PSP, R0
+
+	LDR 	R0, =current_tcb
+	LDR		R0, [R0]
+	PUSH	{r4,lr}
+	BL 		_OS_Scheduler_After_Context_CB
+	POP		{r4,lr}
 
 	ORR		LR, LR, #0xd
 	BX		LR

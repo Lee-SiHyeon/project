@@ -11,6 +11,8 @@ extern void LED_0_Toggle(void);
 extern void LED_1_Toggle(void);
 extern void LED_0_Only_On(void);
 extern void LED_1_Only_On(void);
+extern void LED_0_Only_Off(void);
+extern void LED_1_Only_Off(void);
 
 // Uart.c
 #define Uart_Init			Uart1_Init

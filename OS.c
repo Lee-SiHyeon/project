@@ -82,7 +82,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	ptcb->top_of_stack[15] = INIT_PSR;
 
 	ptcb->prio = prio;
-	ptcb->state = STATE_READY;
+	ptcb->state = TASK_STATE_READY;
 	ptcb->next = 0;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
@@ -120,7 +120,7 @@ TCB* _OS_Get_NextTask() {
 			TCB* initTask = Dequeue(&priorityQueues[i]);
             TCB* task = initTask;
 			do{
-                if (task->state == STATE_READY) {
+                if (task->state == TASK_STATE_READY) {
                     Enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
                     return task;
                 }
@@ -149,4 +149,25 @@ void _OS_Scheduler(void){
 	}
 	//return to PendSV_Handler
 	return;
+}
+
+void _OS_Scheduler_Before_Context_CB(TCB* task){
+	task->state = TASK_STATE_READY;
+	return;
+}
+
+void _OS_Scheduler_After_Context_CB(TCB* task){
+	task->state = TASK_STATE_RUNNING;
+	return;
+}
+
+/*
+param : uint16_t time
+return : void
+description :
+ - Task will be blocked during the paprameter time.
+ - @TODO State change of task, Timer set for returing the state to the ready from blocked.
+*/
+void OS_Set_Task_Block(uint16_t time){
+
 }

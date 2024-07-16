@@ -14,7 +14,9 @@ void Task1(void *para)
 	for(;;)
 	{
 		LED_0_Only_On();
-		Uart_Printf("Task1 start\n");
+		Uart_Printf("Task1 start, task current state =%d\n", current_tcb->state);
+		for(i=0;i<0x100000;i++);
+		LED_0_Only_Off();
 		for(i=0;i<0x100000;i++);
 	}
 }
@@ -24,6 +26,9 @@ void Task2(void *para)
 	volatile int i =0;
 	for(;;){
 		LED_1_Only_On();
+		Uart_Printf("Task2 start, task current state =%d\n", current_tcb->state);
+		for(i=0;i<0x100000;i++);
+		LED_1_Only_Off();
 		for(i=0;i<0x100000;i++);
 	}
 	
@@ -34,7 +39,10 @@ void Task3(void *para)
 	volatile int i;
 	for(;;)
 	{
+		Uart_Printf("Task3 start, task current state =\n", current_tcb->state);
 		LED_All_On(); // LED 0, 1 on.
+		for(i=0;i<0x100000;i++);
+		LED_All_Off(); // LED 0, 1 on.
 		for(i=0;i<0x100000;i++);
 	}
 }

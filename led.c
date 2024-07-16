@@ -23,6 +23,16 @@ void LED_1_Only_On(void)
 	GPIOB->ODR &= ~(0x1<<9);
 }
 
+void LED_0_Only_Off(void)
+{
+	GPIOB->ODR |= (0x1<<8);
+}
+
+void LED_1_Only_Off(void)
+{
+	GPIOB->ODR |= (0x1<<9);
+}
+
 void LED_All_On(void)
 {
 	Macro_Clear_Area(GPIOB->ODR, 0x3, 8);
