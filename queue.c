@@ -33,3 +33,54 @@ TCB* Dequeue(Queue* q) {
     }
     return task;
 }
+
+void Change_Priority(TCB* task, int priority) {
+    if (priority < 0 || priority >= MAX_PRIORITY)
+        return;
+    TCB* current = priorityQueues[task->prio].front;
+    TCB* prev = 0;
+    while (current != 0) {
+        if (current == task) {
+            if (prev != 0) {
+                prev->next = current->next;
+            } 
+            else {
+                priorityQueues[task->prio].front = current->next;
+            }
+            if (current->next == 0) {
+                priorityQueues[task->prio].rear = prev;
+            }
+
+            // 우선순위 변경 후 새로운 큐에 삽입
+            current->prio = priority;
+            current->next = 0;
+            Enqueue(&priorityQueues[priority], current);
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}
+
+void Remove_Task_From_Queue(TCB * task)
+{
+    // 현재 큐에서 작업을 찾고 제거
+    TCB* current = priorityQueues[task->prio].front;
+    TCB* prev = 0;
+    while (current != 0) {
+        if (current == task) {
+            // 노드 제거
+            if (prev != 0) {
+                prev->next = current->next;
+            } else {
+                priorityQueues[task->prio].front = current->next;
+            }
+            if (current->next == 0) {
+                priorityQueues[task->prio].rear = prev;
+            }
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}

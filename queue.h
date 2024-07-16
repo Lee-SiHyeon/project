@@ -14,5 +14,7 @@ void Init_Queue(Queue* q);
 int Is_Queue_Empty(Queue* q);
 void Enqueue(Queue* q, TCB* task);
 TCB* Dequeue(Queue* q);
+void Change_Priority(TCB* task, int priority);
+void Remove_Task_From_Queue(TCB * task);
 
 #endif // QUEUE_H
