@@ -24,7 +24,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "device_driver.h"
-
+#include "OS.h"
 void Invalid_ISR(void)
 {
   Uart1_Printf("Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
@@ -174,8 +174,12 @@ void DebugMon_Handler(void)
 }
 
 volatile int systick_flag = 0;
+volatile uint32_t sys_cnt=0;
 void SysTick_Handler(void)
 {
+	sys_cnt++;
+	if(sys_cnt > SYS_CNT_MAX) sys_cnt =0;
+
 	SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 }
 

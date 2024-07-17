@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "os.h": "c",
-        "stm32f10x.h": "c"
+        "stm32f10x.h": "c",
+        "device_driver.h": "c",
+        "cstdint": "c"
     }
 }

@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-*.json
-=======
 # Ignore .txt files
 *.txt
 
@@ -21,4 +18,3 @@
 
 # Ignore Visual Studio Code settings
 .vscode/
->>>>>>> e8d52a6aec476d0f77ca1c1084a8d08d3a2fd484
