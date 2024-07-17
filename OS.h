@@ -6,7 +6,7 @@
 #define MAX_PRIORITY 			(10)
 #define MAX_TASKS 				(100)
 #define BLOCK_LIST_SIZE			(5)
-#define SYSTICK					(1000)
+#define SYSTICK					(1)
 #define SYS_CNT_MAX				(UINT32_MAX / SYSTICK)
 
 #define PRIO_HIGHEST			(0)
@@ -31,10 +31,10 @@ typedef enum {
 /* [ Type ] */
 
 typedef struct _tcb{
-	unsigned long* top_of_stack;	// task ������� stack�� top
-	int no_task;					// task ��ȣ (tcb �迭�� index)
-	int prio;						// task�� priority
-	int state;						// task�� ����
+	unsigned long* top_of_stack;		
+	int no_task;					
+	int prio;						
+	int state;						
 	unsigned int wakeup_target_time;
 	unsigned int systick_cnt_at_blocked; // for debug
 	struct _tcb* next;
