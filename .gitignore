@@ -13,7 +13,7 @@
 # Ignore .map files
 *.map
 
-# Ignore su files
+# Ignore .su files
 *.su
 
 # Ignore Eclipse settings

@@ -13,13 +13,19 @@ volatile TCB* current_tcb;
 volatile TCB* next_tcb;
 volatile TCB** p_current_tcb;
 
+TCB* blocked_task_list[BLOCK_LIST_SIZE];
+char blocked_task_cnt = 0;
 Queue priorityQueues[MAX_PRIORITY];
-/* Function */
+
+extern volatile unsigned int sys_cnt;
+
+/* Function Prototype */
+void _OS_Blocked_Task_init(void);
+
 void OS_Init(void)
 {
-
 	_OS_Init_Scheduler();
-
+	_OS_Blocked_Task_init();
 	int i;
 	for(i=0; i<MAX_TCB; i++)
 	{
@@ -84,11 +90,14 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	ptcb->prio = prio;
 	ptcb->state = TASK_STATE_READY;
 	ptcb->next = 0;
+	ptcb->wakeup_target_time = 0;
+	ptcb->systick_cnt_at_blocked = 0;
+
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
     Enqueue(&priorityQueues[ptcb->prio], ptcb);
 
-
+	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb, ptcb);
 	return ptcb->no_task;
 }
 
@@ -108,7 +117,7 @@ void OS_Scheduler_Start(void)
 	{
 		NVIC_SetPriority(i, 0xe);
 	}
-	SysTick_OS_Tick(1000);
+	SysTick_OS_Tick(SYSTICK);
 	_OS_Start_First_Task();
 }
 
@@ -117,16 +126,8 @@ TCB* _OS_Get_NextTask() {
 	int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
         if (!Is_Queue_Empty(&priorityQueues[i])) {
-			TCB* initTask = Dequeue(&priorityQueues[i]);
-            TCB* task = initTask;
-			do{
-                if (task->state == TASK_STATE_READY) {
-                    Enqueue(&priorityQueues[i], task); // 동일한 우선순위의 맨 끝으로 이동
-                    return task;
-                }
-                Enqueue(&priorityQueues[i], task); // 다시 큐에 넣어줌
-                task = Dequeue(&priorityQueues[i]);
-            } while(initTask != task);
+			TCB* task = Dequeue(&priorityQueues[i]);
+            return task;
         }
     }
     return 0; // 실행할 task가 없음
@@ -143,7 +144,7 @@ void _OS_Scheduler(void){
 	TCB* task = 0;
 	task = _OS_Get_NextTask();
 	if (task == 0){
-		next_tcb = current_tcb;
+		next_tcb = &tcb[0];
 	}else{
 		next_tcb = task;
 	}
@@ -151,8 +152,32 @@ void _OS_Scheduler(void){
 	return;
 }
 
+void _OS_Scheduler_Restore_Expired_TCB(void){
+	int i;
+	for(i=0; i< BLOCK_LIST_SIZE; i++){
+		//깨워야하는 애들
+		if ((blocked_task_list[i]->state==TASK_STATE_BLOCKED) && \
+		   	(blocked_task_list[i]->wakeup_target_time <= sys_cnt))
+		{
+			blocked_task_list[i]->state = TASK_STATE_READY;
+			Enqueue(&priorityQueues[blocked_task_list[i]->prio], blocked_task_list[i]);
+			blocked_task_list[i] = 0;
+			blocked_task_cnt--;
+		}
+	}
+}
+
 void _OS_Scheduler_Before_Context_CB(TCB* task){
-	task->state = TASK_STATE_READY;
+
+	_OS_Scheduler_Restore_Expired_TCB();
+	switch (task->state){
+		case TASK_STATE_BLOCKED:
+			break;
+		case TASK_STATE_RUNNING:
+			task->state = TASK_STATE_READY;
+			Enqueue(&priorityQueues[task->prio], task);
+			break;
+	}
 	return;
 }
 
@@ -168,6 +193,41 @@ description :
  - Task will be blocked during the paprameter time.
  - @TODO State change of task, Timer set for returing the state to the ready from blocked.
 */
-void OS_Set_Task_Block(uint16_t time){
 
+void OS_Set_Task_Block(TCB* task, unsigned int block_time){
+	volatile int i;
+	// if user가 5s = 5000ms입력할 때,
+	// 5000/SYSTICK, systick = 1000이면 cnt 5개 세주면 되고
+	// systick = 1이면 5000을 세주면 됨.
+	// 이거 처리하는데 몇 ms 걸릴까. 그거는 HW limitation으로 지원 불가할텐데.
+	unsigned int convert_to_block_time_cnt = block_time/SYSTICK;
+	if (sys_cnt+convert_to_block_time_cnt>SYS_CNT_MAX){
+		task->wakeup_target_time = (sys_cnt+convert_to_block_time_cnt)%SYS_CNT_MAX;
+	}else{
+		task->wakeup_target_time = (sys_cnt+convert_to_block_time_cnt);
+	}
+
+	task->systick_cnt_at_blocked = sys_cnt;
+	for(i = 0; i<BLOCK_LIST_SIZE; i++){
+		if(blocked_task_list[i]==0){
+			__disable_irq();
+			task->state = TASK_STATE_BLOCKED;
+			blocked_task_list[i] = task;
+			blocked_task_cnt++;
+			__enable_irq();
+			break;
+		}
+	}
+
+	SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
+	return;
+}
+
+void _OS_Blocked_Task_init(void){
+	int i;
+	for(i=0; i< BLOCK_LIST_SIZE; i++)
+	{
+		blocked_task_list[i] = 0;
+	}
+	return;
 }
