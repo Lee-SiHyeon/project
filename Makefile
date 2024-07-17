@@ -9,7 +9,7 @@ LDS_FILE_NAME	= rom_0x08003000.lds
 
 # Compiler & Linker Option, Cortex-M3 & No FPU
 CFLAGS			= -mcpu=cortex-m3 -fno-stack-protector -c -O0 -Wall -mthumb -msoft-float -fno-builtin -funsigned-char
-CFLAGS		    += -fno-strict-aliasing -fno-common -pipe -mapcs -mno-thumb-interwork 
+CFLAGS		    += -fno-strict-aliasing -fno-common -pipe -mapcs -mno-thumb-interwork -fstack-usage
 LDFLAGS			= --cref -Bstatic -nostdlib -p -EL -lm
 
 # Output File definition
