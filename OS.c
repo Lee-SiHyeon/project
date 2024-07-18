@@ -95,7 +95,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
-    Enqueue(&priorityQueues[ptcb->prio], ptcb);
+    Enqueue(&priorityQueues[ptcb->prio], ptcb, TCB_PTR);
 
 	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb, ptcb);
 	return ptcb->no_task;
@@ -126,7 +126,8 @@ TCB* _OS_Get_NextTask() {
 	int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
         if (!Is_Queue_Empty(&priorityQueues[i])) {
-			TCB* task = Dequeue(&priorityQueues[i]);
+			Node* node = Dequeue(&priorityQueues[i]);
+			TCB* task = (TCB*)node->data;
             return task;
         }
     }
@@ -160,7 +161,7 @@ void _OS_Scheduler_Restore_Expired_TCB(void){
 		   	(blocked_task_list[i]->wakeup_target_time <= sys_cnt))
 		{
 			blocked_task_list[i]->state = TASK_STATE_READY;
-			Enqueue(&priorityQueues[blocked_task_list[i]->prio], blocked_task_list[i]);
+			Enqueue(&priorityQueues[blocked_task_list[i]->prio], blocked_task_list[i], TCB_PTR);
 			blocked_task_list[i] = 0;
 			blocked_task_cnt--;
 		}
@@ -175,7 +176,7 @@ void _OS_Scheduler_Before_Context_CB(TCB* task){
 			break;
 		case TASK_STATE_RUNNING:
 			task->state = TASK_STATE_READY;
-			Enqueue(&priorityQueues[task->prio], task);
+			Enqueue(&priorityQueues[task->prio], task, TCB_PTR);
 			break;
 	}
 	return;
