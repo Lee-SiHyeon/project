@@ -14,7 +14,8 @@ typedef enum {
     INT,
     CHAR,
     STRING,
-    TCB_PTR
+    TCB_PTR,
+    DEFAULT
 } DataType;
 
 typedef struct Node {
@@ -32,6 +33,7 @@ typedef struct Queue {
 extern Queue priorityQueues[MAX_PRIORITY];
 
 // Queue* Create_Queue();
+void Init_Node_List();
 void Init_Queue(Queue* q);
 int Is_Queue_Empty(Queue* q);
 void Enqueue(Queue* q, void* data, DataType type);

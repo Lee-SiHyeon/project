@@ -27,8 +27,9 @@ void Task1(void *para)
 		LED_0_Only_On();
 		for(i=0;i<0x100000;i++);
 		LED_0_Only_Off();
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 500);
+		for(i=0;i<0x100000;i++);
+		// if(current_tcb->state !=TASK_STATE_BLOCKED) 
+			// OS_Set_Task_Block(current_tcb, 500);
 	}
 }
 
@@ -41,8 +42,8 @@ void Task2(void *para)
 		for(i=0;i<0x100000;i++);
 		LED_1_Only_Off();
 		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 300);
+		// if(current_tcb->state !=TASK_STATE_BLOCKED) 
+			// OS_Set_Task_Block(current_tcb, 300);
 	}
 	
 }
@@ -57,8 +58,8 @@ void Task3(void *para)
 		for(i=0;i<0x100000;i++);
 		LED_All_Off(); // LED 0, 1 on.
 		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 100);
+		// if(current_tcb->state !=TASK_STATE_BLOCKED) 
+			// OS_Set_Task_Block(current_tcb, 100);
 	}
 }
 
@@ -66,12 +67,12 @@ void Task3(void *para)
 void Main(void)
 {
 	Uart_Printf("M3-Mini RTOS\n");
-
 	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
+	
 	OS_Create_Task_Simple(Task0, (void*)0, 6, 1024);
 	OS_Create_Task_Simple(Task1, (void*)0, 1, 1024);
-	OS_Create_Task_Simple(Task2, (void*)0, 2, 1024); 
-	OS_Create_Task_Simple(Task3, (void*)0, 3, 1024); 
+	OS_Create_Task_Simple(Task2, (void*)0, 1, 1024); 
+	OS_Create_Task_Simple(Task3, (void*)0, 1, 1024); 
 
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 

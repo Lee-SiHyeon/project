@@ -31,6 +31,7 @@ void OS_Init(void)
 	{
 		tcb[i].no_task = i;
 	}
+	Init_Node_List();
 }
 
 // 스케줄러 초기화
@@ -128,6 +129,7 @@ TCB* _OS_Get_NextTask() {
         if (!Is_Queue_Empty(&priorityQueues[i])) {
 			Node* node = Dequeue(&priorityQueues[i]);
 			TCB* task = (TCB*)node->data;
+
             return task;
         }
     }
@@ -142,6 +144,7 @@ description :
  if there is no next_tcb, current_tcb will be executed repeatly.
 */
 void _OS_Scheduler(void){
+	
 	TCB* task = 0;
 	task = _OS_Get_NextTask();
 	if (task == 0){

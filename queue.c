@@ -15,20 +15,29 @@ int Is_Queue_Empty(Queue* q) {
     return q->front == 0;
 }
 
+void Init_Node_List() {
+    int i;
+    for(i=0; i<NODE_LIST_SIZE; i++)
+	{
+		node_list[i].next = 0;
+	}
+}
+
 // 큐에 task 추가
 void Enqueue(Queue* q, void* data, DataType type){
     int i;
     for(i = 0; i < NODE_LIST_SIZE; i++){
-		if(node_list[i].data == 0){
+		if(node_list[i].next == 0){
 			node_list[i].data = data;
             node_list[i].type = type;
-            node_list[i].next = 0;
+            node_list[i].next = &node_list[i];
             break;
 		}
 	}
     if (q->rear == 0) {
         q->front = q->rear = &node_list[i];
     } else {
+         
         q->rear->next = &node_list[i];
         q->rear = &node_list[i];
     }
@@ -42,12 +51,11 @@ Node* Dequeue(Queue* q) {
 
     Node* node = q->front;
     q->front = q->front->next;
-
+    node->next = 0;
+    
     if (q->front == 0) {
-        q->rear = 0; // 큐가 비어있을 경우 rear도 NULL로 설정
+        q->rear = 0; // If queue becomes empty, rear should be NULL
     }
-
-    node->next = 0; // 임시로 저장한 노드의 next를 NULL로 설정
     return node;
 }
 
