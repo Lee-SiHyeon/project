@@ -1,6 +1,7 @@
 #ifndef _OS_H_
 #define _OS_H_
 
+#include "queue.h"
 /* [Constant] */
 #define MAX_TCB					(20)
 #define MAX_PRIORITY 			(10)
@@ -29,7 +30,10 @@ typedef enum {
 #define INIT_PSR				(0x01000000)
 
 /* [ Type ] */
-
+typedef struct _signal{
+	int tcb_idx;
+	int data;
+}Signal_st;
 typedef struct _tcb{
 	unsigned long* top_of_stack;		
 	int no_task;					
@@ -38,6 +42,8 @@ typedef struct _tcb{
 	unsigned int wakeup_target_time;
 	unsigned int systick_cnt_at_blocked; // for debug
 	struct _tcb* next;
+	Queue* task_message_q;
+	char event_wait_flag;
 }TCB;
 
 /* [ Macro ] */

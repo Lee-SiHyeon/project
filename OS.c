@@ -16,7 +16,8 @@ volatile TCB** p_current_tcb;
 TCB* blocked_task_list[BLOCK_LIST_SIZE];
 char blocked_task_cnt = 0;
 Queue priorityQueues[MAX_PRIORITY];
-
+Queue signaling_Queue;
+Queue TaskQueue;
 extern volatile unsigned int sys_cnt;
 
 /* Function Prototype */
@@ -32,6 +33,8 @@ void OS_Init(void)
 		tcb[i].no_task = i;
 	}
 	Init_Node_List();
+	Init_Queue(&signaling_Queue);
+	Init_Queue(&TaskQueue);
 }
 
 // 스케줄러 초기화
@@ -93,12 +96,15 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	ptcb->next = 0;
 	ptcb->wakeup_target_time = 0;
 	ptcb->systick_cnt_at_blocked = 0;
-
+	if (idx_tcb-1 == 3){
+		ptcb->task_message_q = &TaskQueue;
+	}
+	ptcb->event_wait_flag = 0;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
     Enqueue(&priorityQueues[ptcb->prio], ptcb, TCB_PTR);
 
-	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb, ptcb);
+	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb-1, ptcb);
 	return ptcb->no_task;
 }
 
@@ -171,8 +177,28 @@ void _OS_Scheduler_Restore_Expired_TCB(void){
 	}
 }
 
-void _OS_Scheduler_Before_Context_CB(TCB* task){
+void _OS_Scheduler_Handle_Signaling_Flag(void){
+	int i;
+	int tcb_idx, data;
+	Node* node;
 
+	while(!Is_Queue_Empty(&signaling_Queue)){
+		node = Dequeue(&signaling_Queue);
+		tcb_idx = ((Signal_st*)node->data)->tcb_idx;
+		data = ((Signal_st*)node->data)->data;
+		Uart_Printf("tcb_idx = %d, data = %c\n", tcb_idx, data);
+		Enqueue (tcb[tcb_idx].task_message_q, data,INT);
+		switch(tcb[tcb_idx].state){
+			case TASK_STATE_BLOCKED:
+				tcb[tcb_idx].state = TASK_STATE_READY;
+				Enqueue(&priorityQueues[tcb[tcb_idx].prio], &tcb[tcb_idx], TCB_PTR);
+				break;
+		}
+	}
+	return;
+}
+void _OS_Scheduler_Before_Context_CB(TCB* task){
+	_OS_Scheduler_Handle_Signaling_Flag();
 	_OS_Scheduler_Restore_Expired_TCB();
 	switch (task->state){
 		case TASK_STATE_BLOCKED:

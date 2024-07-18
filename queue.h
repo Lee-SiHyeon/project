@@ -1,8 +1,6 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include "OS.h"
-
 #define NODE_LIST_SIZE 100
 
 #define SIZEOF_INT 4
@@ -15,6 +13,7 @@ typedef enum {
     CHAR,
     STRING,
     TCB_PTR,
+    STRUCT_SIGNAL,
     DEFAULT
 } DataType;
 
@@ -30,7 +29,7 @@ typedef struct Queue {
     int max_element;
 } Queue;
 
-extern Queue priorityQueues[MAX_PRIORITY];
+
 
 // Queue* Create_Queue();
 void Init_Node_List();

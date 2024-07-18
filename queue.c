@@ -1,6 +1,7 @@
 #include "queue.h"
 #include "device_driver.h"
 
+extern Queue priorityQueues[10];
 Node node_list[NODE_LIST_SIZE];
 
 // Queue* Create_Queue()
@@ -46,6 +47,7 @@ void Enqueue(Queue* q, void* data, DataType type){
 // 큐에서 task 제거
 Node* Dequeue(Queue* q) {
     if (Is_Queue_Empty(q)) {
+        Uart_Printf("is empty queue!\n");
         return 0;
     }
 

@@ -25,6 +25,7 @@
 
 #include "device_driver.h"
 #include "OS.h"
+#include "queue.h"
 void Invalid_ISR(void)
 {
   Uart1_Printf("Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
@@ -658,12 +659,16 @@ void SPI2_IRQHandler(void)
  *******************************************************************************/
 volatile int uart_rx_in;
 volatile char uart_rx_data;
-
+extern Queue signaling_Queue;
+Signal_st uart_data;
 void USART1_IRQHandler(void)
 {
 	uart_rx_data = USART1->DR;
+	Uart_Printf("echo =%c\n",uart_rx_data);
 	NVIC_ClearPendingIRQ(USART1_IRQn);
-
+	uart_data.data = uart_rx_data;
+	uart_data.tcb_idx=3;
+	Enqueue(&signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
 	uart_rx_in = 1;
 }
 
