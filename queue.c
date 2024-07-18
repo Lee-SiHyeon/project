@@ -50,7 +50,14 @@ Node* Dequeue(Queue* q) {
     }
 
     Node* node = q->front;
-    q->front = q->front->next;
+    if(q->front == q->front->next){
+        // this queue will be empty after executing this dequeue.
+        q->front = 0; 
+    }else{
+        q->front = q->front->next;
+    }
+    
+    
     node->next = 0;
     
     if (q->front == 0) {
