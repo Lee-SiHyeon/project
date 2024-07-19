@@ -5,7 +5,7 @@ extern Queue ready_Queues[10];
 Node node_list[NODE_LIST_SIZE];
 int node_cnt =NODE_LIST_SIZE;
 Queue queue_list[20];
-// Queue* Create_Queue()
+extern volatile unsigned int sys_cnt;
 
 // 큐 초기화
 void Init_Queue(Queue* q) {
@@ -47,7 +47,7 @@ int Enqueue(Queue* q, void* data, DataType type){
     if (q->rear == 0) {
         q->front = q->rear = &node_list[i];
     } else {
-         
+        
         q->rear->next = &node_list[i];
         q->rear = &node_list[i];
     }
@@ -57,10 +57,21 @@ int Enqueue(Queue* q, void* data, DataType type){
 
 // 큐에서 task 제거
 Node* Dequeue(Queue* q) {
-    if (Is_Queue_Empty(q)) {
-        Uart_Printf("is empty queue!\n");
-        return 0;
+    unsigned int start_tick = sys_cnt;
+    int data_ready = !Is_Queue_Empty(q);
+    if (data_ready == 0) {
+        while((sys_cnt - start_tick) < DEQUEUE_TIMEOUT)
+        {
+            // Uart_Printf("Dequeue timeout = %d\n", sys_cnt);
+            if (!Is_Queue_Empty(q))
+            {
+                data_ready = 1;
+                break;
+            }
+        }
     }
+    if (data_ready == 0)
+        return 0;
 
     Node* node = q->front;
     if(q->front == q->front->next){

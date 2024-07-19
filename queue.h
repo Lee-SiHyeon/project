@@ -2,7 +2,7 @@
 #define QUEUE_H
 
 #define NODE_LIST_SIZE 200
-
+#define DEQUEUE_TIMEOUT 500
 #define SIZEOF_INT 4
 #define SIZEOF_CHAR 1
 #define SIZEOF_STRING 4
@@ -19,6 +19,11 @@ typedef enum {
     DATATYPE_MAX
 } DataType;
 
+typedef enum {
+    FALSE = 0,
+    TRUE = 1
+} bool;
+
 typedef struct Node {
     void* data;
     DataType type;
@@ -33,9 +38,7 @@ typedef struct Queue {
     char is_using;
 } Queue;
 
-
-
-// Queue* Create_Queue();
+Queue* Create_Queue();
 void Init_Node_List();
 void Init_Queue(Queue* q);
 int Is_Queue_Empty(Queue* q);
