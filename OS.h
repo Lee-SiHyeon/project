@@ -17,8 +17,13 @@
 #define OS_SUCCESS				(0)
 #define OS_FAIL_ALLOCATE_TCB	(-1)
 #define OS_FAIL_ALLOCATE_STACK	(-2)
+#define OS_FAIL_ALLOCATE_QUEUE  (-3)
 
 #define STACK_SIZE				(8 * 1024)
+#define QUEUE_SIZE				(2 * 1024)
+
+#define INIT_PSR				(0x01000000)
+
 typedef enum {
 	TASK_STATE_NONE =0,
 	TASK_STATE_READY,
@@ -27,7 +32,6 @@ typedef enum {
 	TASK_STATE_MAX,
 }Task_State;
 
-#define INIT_PSR				(0x01000000)
 
 /* [ Type ] */
 typedef struct _signal{
@@ -50,7 +54,9 @@ typedef struct _tcb{
 
 /* [ Function ] */
 extern void OS_Init(void);
-extern int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_stack);
+int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
+                          int size_stack, int q_element_size, int q_element_max);
+Queue* _OS_Get_Queue(int element_size, int element_max);
 extern void OS_Scheduler_Start(void);
 void OS_Set_Task_Block(TCB* task, unsigned int block_time);
 TCB* _OS_Get_NextTask();

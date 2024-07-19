@@ -175,7 +175,7 @@ void DebugMon_Handler(void)
 }
 
 volatile int systick_flag = 0;
-volatile uint32_t sys_cnt=0;
+volatile unsigned int sys_cnt=0;
 void SysTick_Handler(void)
 {
 	sys_cnt++;
@@ -657,19 +657,18 @@ void SPI2_IRQHandler(void)
  * Output         : None
  * Return         : None
  *******************************************************************************/
-volatile int uart_rx_in;
+
 volatile char uart_rx_data;
-extern Queue signaling_Queue;
-Signal_st uart_data;
+extern Queue* signaling_Queue;
 void USART1_IRQHandler(void)
 {
+	static Signal_st uart_data;
 	uart_rx_data = USART1->DR;
-	Uart_Printf("echo =%c\n",uart_rx_data);
+	// Uart_Printf("echo =%c\n",uart_rx_data);
 	NVIC_ClearPendingIRQ(USART1_IRQn);
 	uart_data.data = uart_rx_data;
 	uart_data.tcb_idx=3;
-	Enqueue(&signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
-	uart_rx_in = 1;
+	Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
 }
 
 /*******************************************************************************

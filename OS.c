@@ -9,39 +9,35 @@
 /* Global Variable */
 TCB tcb[MAX_TCB];
 char stack[STACK_SIZE] __attribute__((__aligned__(8)));
+char queue[QUEUE_SIZE] __attribute__((__aligned__(4)));
+
 volatile TCB* current_tcb;
 volatile TCB* next_tcb;
 volatile TCB** p_current_tcb;
 
-TCB* blocked_task_list[BLOCK_LIST_SIZE];
-char blocked_task_cnt = 0;
-Queue priorityQueues[MAX_PRIORITY];
-Queue signaling_Queue;
-Queue TaskQueue;
+Queue* ready_Queues[MAX_PRIORITY];
+Queue* signaling_Queue;
 extern volatile unsigned int sys_cnt;
 
 /* Function Prototype */
-void _OS_Blocked_Task_init(void);
 
 void OS_Init(void)
 {
 	_OS_Init_Scheduler();
-	_OS_Blocked_Task_init();
 	int i;
 	for(i=0; i<MAX_TCB; i++)
 	{
 		tcb[i].no_task = i;
 	}
+	signaling_Queue = _OS_Get_Queue(8, 20);
 	Init_Node_List();
-	Init_Queue(&signaling_Queue);
-	Init_Queue(&TaskQueue);
 }
 
 // 스케줄러 초기화
 void _OS_Init_Scheduler() {
     int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
-        Init_Queue(&priorityQueues[i]);
+        ready_Queues[i] = _OS_Get_Queue(4, 5);
     }
 }
 
@@ -59,7 +55,25 @@ char* _OS_Get_Stack(int size){
 	return ret;
 }
 
-int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_stack)
+Queue* _OS_Get_Queue(int element_size, int element_max){
+	static char* queue_limit = queue + QUEUE_SIZE;
+	static char* pqueue = queue;
+	int size = 0;
+	Queue* ret;
+
+	size = element_size * element_max;
+	size = (size + 3) & ~0x3;
+	if( pqueue +size > queue_limit) return (Queue*)0;
+	ret = Create_Queue(element_max);
+	
+	if(!ret) return (Queue*)0;
+	
+	pqueue += size;
+	return ret;
+}
+
+int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
+                          int size_stack, int q_element_size, int q_element_max)
 {
 	// ptask : task 코드의 시작주소
 	// para : task코드가 시작하면서 전달받을 parameter
@@ -82,6 +96,13 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	{
 		return OS_FAIL_ALLOCATE_STACK;
 	}
+	if( q_element_max !=0 && q_element_size !=0 ){
+		ptcb->task_message_q = (Queue*)_OS_Get_Queue(q_element_size, q_element_max);
+	}else{
+		Uart_Printf("invalid param, q_element_max = %d, q_element_size = %d\n",\
+		q_element_max, q_element_size);
+		ptcb->task_message_q = (Queue*) 0;
+	}
 
 	idx_tcb++; // 다음 tcb 할당을 위한 index 이동
 
@@ -95,14 +116,10 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, int size_st
 	ptcb->state = TASK_STATE_READY;
 	ptcb->next = 0;
 	ptcb->wakeup_target_time = 0;
-	ptcb->systick_cnt_at_blocked = 0;
-	if (idx_tcb-1 == 3){
-		ptcb->task_message_q = &TaskQueue;
-	}
 	ptcb->event_wait_flag = 0;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
-    Enqueue(&priorityQueues[ptcb->prio], ptcb, TCB_PTR);
+    Enqueue(ready_Queues[ptcb->prio], ptcb, TCB_PTR);
 
 	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb-1, ptcb);
 	return ptcb->no_task;
@@ -132,8 +149,8 @@ void OS_Scheduler_Start(void)
 TCB* _OS_Get_NextTask() {
 	int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
-        if (!Is_Queue_Empty(&priorityQueues[i])) {
-			Node* node = Dequeue(&priorityQueues[i]);
+        if (!Is_Queue_Empty(ready_Queues[i])) {
+			Node* node = Dequeue(ready_Queues[i]);
 			TCB* task = (TCB*)node->data;
 
             return task;
@@ -164,15 +181,13 @@ void _OS_Scheduler(void){
 
 void _OS_Scheduler_Restore_Expired_TCB(void){
 	int i;
-	for(i=0; i< BLOCK_LIST_SIZE; i++){
+	for(i=0; i< MAX_TCB; i++){
 		//깨워야하는 애들
-		if ((blocked_task_list[i]->state==TASK_STATE_BLOCKED) && \
-		   	(blocked_task_list[i]->wakeup_target_time <= sys_cnt))
+		if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+		   	(tcb[i].wakeup_target_time <= sys_cnt))
 		{
-			blocked_task_list[i]->state = TASK_STATE_READY;
-			Enqueue(&priorityQueues[blocked_task_list[i]->prio], blocked_task_list[i], TCB_PTR);
-			blocked_task_list[i] = 0;
-			blocked_task_cnt--;
+			tcb[i].state = TASK_STATE_READY;
+			Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
 		}
 	}
 }
@@ -182,16 +197,15 @@ void _OS_Scheduler_Handle_Signaling_Flag(void){
 	int tcb_idx, data;
 	Node* node;
 
-	while(!Is_Queue_Empty(&signaling_Queue)){
-		node = Dequeue(&signaling_Queue);
+	while(!Is_Queue_Empty(signaling_Queue)){
+		node = Dequeue(signaling_Queue);
 		tcb_idx = ((Signal_st*)node->data)->tcb_idx;
 		data = ((Signal_st*)node->data)->data;
-		Uart_Printf("tcb_idx = %d, data = %c\n", tcb_idx, data);
 		Enqueue (tcb[tcb_idx].task_message_q, data,INT);
 		switch(tcb[tcb_idx].state){
 			case TASK_STATE_BLOCKED:
 				tcb[tcb_idx].state = TASK_STATE_READY;
-				Enqueue(&priorityQueues[tcb[tcb_idx].prio], &tcb[tcb_idx], TCB_PTR);
+				Enqueue(ready_Queues[tcb[tcb_idx].prio], &tcb[tcb_idx], TCB_PTR);
 				break;
 		}
 	}
@@ -205,7 +219,7 @@ void _OS_Scheduler_Before_Context_CB(TCB* task){
 			break;
 		case TASK_STATE_RUNNING:
 			task->state = TASK_STATE_READY;
-			Enqueue(&priorityQueues[task->prio], task, TCB_PTR);
+			Enqueue(ready_Queues[task->prio], task, TCB_PTR);
 			break;
 	}
 	return;
@@ -231,33 +245,20 @@ void OS_Set_Task_Block(TCB* task, unsigned int block_time){
 	// systick = 1이면 5000을 세주면 됨.
 	// 이거 처리하는데 몇 ms 걸릴까. 그거는 HW limitation으로 지원 불가할텐데.
 	unsigned int convert_to_block_time_cnt = block_time/SYSTICK;
+	unsigned int wakeup_time=0;
 	if (sys_cnt+convert_to_block_time_cnt>SYS_CNT_MAX){
-		task->wakeup_target_time = (sys_cnt+convert_to_block_time_cnt)%SYS_CNT_MAX;
+		wakeup_time = (sys_cnt+convert_to_block_time_cnt)%SYS_CNT_MAX;
 	}else{
-		task->wakeup_target_time = (sys_cnt+convert_to_block_time_cnt);
+		wakeup_time = (sys_cnt+convert_to_block_time_cnt);
 	}
 
+	__disable_irq();
+	task->state = TASK_STATE_BLOCKED;
 	task->systick_cnt_at_blocked = sys_cnt;
-	for(i = 0; i<BLOCK_LIST_SIZE; i++){
-		if(blocked_task_list[i]==0){
-			__disable_irq();
-			task->state = TASK_STATE_BLOCKED;
-			blocked_task_list[i] = task;
-			blocked_task_cnt++;
-			__enable_irq();
-			break;
-		}
-	}
+	task->wakeup_target_time = wakeup_time;
+	__enable_irq();
 
 	SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
 	return;
 }
 
-void _OS_Blocked_Task_init(void){
-	int i;
-	for(i=0; i< BLOCK_LIST_SIZE; i++)
-	{
-		blocked_task_list[i] = 0;
-	}
-	return;
-}
