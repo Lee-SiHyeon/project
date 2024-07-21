@@ -1,6 +1,7 @@
 #include "device_driver.h"
 #include "OS.h"
 #include "queue.h"
+#include "lcd_test.h"
 
 extern TCB* next_tcb;
 extern TCB* current_tcb;
@@ -10,6 +11,8 @@ extern volatile int tim4_timeout;
 extern volatile int systick_flag;
 extern Queue ready_Queues[MAX_PRIORITY];
 extern Queue* signaling_Queue;
+extern int game_over;
+
 void Task0(void *para){
 	for(;;)
 	{
@@ -100,17 +103,57 @@ void Key_Receive_Task(void *para)
 	}
 }
 
+void Game_Plane_Move_Task(void *para)
+{
+	//volatile int i;
+	for(;;)
+	{
+		if(game_over) break;
+		Game_Plane_Move();
+		if(current_tcb->state !=TASK_STATE_BLOCKED)
+			OS_Set_Task_Block(current_tcb, 100);
+	}
+
+	Game_Over();
+}
+
+void Game_Missile_Move_Task(void *para)
+{
+	volatile int i;
+	for(;;)
+	{
+		if(game_over) break;
+		Game_Missile_Move();
+		for(i=0;i<0x100000;i++);
+		if(current_tcb->state !=TASK_STATE_BLOCKED)
+			OS_Set_Task_Block(current_tcb, 100);
+	}
+}
+
+void Game_Over_Task(void *para)
+{
+	volatile int i;
+	for(;;)
+	{
+		Game_Over();
+		for(i=0;i<0x100000;i++);
+		if(current_tcb->state !=TASK_STATE_BLOCKED)
+			OS_Set_Task_Block(current_tcb, 100);
+	}
+}
 
 void Main(void)
 {
 	Uart_Printf("M3-Mini RTOS\n");
-	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
 	
-	OS_Create_Task_Simple(Task0, (void*)0, 6, 2048,4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 3, 2048,4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 2, 2048,4,10); 
+	OS_Init();	// OS Initialize
+	Game_Init();
+
+	OS_Create_Task_Simple(Game_Plane_Move_Task, (void*)0, 1, 1024, 0, 0);
+	OS_Create_Task_Simple(Game_Missile_Move_Task, (void*)0, 1, 1024, 0, 0);
+	OS_Create_Task_Simple(Game_Over_Task, (void*)0, 1, 1024, 0, 0);
 	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 1, 2048,sizeof(int), 10); 
-	
+
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 
 	for(;;)
