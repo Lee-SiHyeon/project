@@ -22,9 +22,15 @@ extern void ClearPlane(void);
 extern void DrawMissile(GameObject* missile);
 extern void ClearMissile(GameObject* missile);
 extern void Game_Init(void);
-extern void Game_Plane_Move(void);
+extern void Game_Plane_Move(int dir);
 extern void Game_Missile_Generation(void);
 extern void Game_Missile_Move(void);
 extern void Game_Over(void);
+extern void Draw_LCD(void);
+extern void PLay_BGM(void);
+extern void intToStr(int score, char *str);
+extern void drawDigit(int x, int y, int digit);
+extern void drawScore(int x, int y, int score);
+
 
 #endif /* LCD_TEST_H_ */

@@ -26,6 +26,9 @@
 #include "device_driver.h"
 #include "OS.h"
 #include "queue.h"
+
+extern Queue* signaling_Queue;
+
 void Invalid_ISR(void)
 {
   Uart1_Printf("Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
@@ -307,6 +310,14 @@ void EXTI3_IRQHandler(void)
 	NVIC_ClearPendingIRQ(EXTI3_IRQn);
 
 	key_value = 1;
+
+	static Signal_st key_input_data;
+	if(key_value==1) key_input_data.data = 1; //joy stick: left
+	key_input_data.tcb_idx = 0; //
+
+	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
+
+	key_value = 0;
 }
 
 /*******************************************************************************
@@ -485,6 +496,14 @@ void EXTI9_5_IRQHandler(void)
 	NVIC_ClearPendingIRQ(23);
 
 	key_value = EXTI9_5_LUT[kv];
+
+	static Signal_st key_input_data;
+	if(key_value) key_input_data.data = key_value; //joy stick: 2-right, 3-down, 4-up
+	key_input_data.tcb_idx = 0; //
+
+	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
+
+	key_value = 0;
 }
 
 /*******************************************************************************
@@ -659,7 +678,6 @@ void SPI2_IRQHandler(void)
  *******************************************************************************/
 
 volatile char uart_rx_data;
-extern Queue* signaling_Queue;
 void USART1_IRQHandler(void)
 {
 	static Signal_st uart_data;
@@ -710,6 +728,15 @@ void EXTI15_10_IRQHandler(void)
 	NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 
 	key_value = EXTI15_10_LUT[kv];
+
+
+	static Signal_st key_input_data;
+	if(key_value==5) key_input_data.data = 321; //reset key
+	key_input_data.tcb_idx = 3; //
+
+	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
+
+	key_value = 0;
 }
 
 /*******************************************************************************
