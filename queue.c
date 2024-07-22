@@ -96,16 +96,16 @@ Queue* Create_Queue(int element_max)
 {
     int i;
     if( element_max ==0){
-        Uart_Printf(current_tcb, "[Create Queue] invalid param, element_max ==0\n");
+        // Uart_Printf(current_tcb, "[Create Queue] invalid param, element_max ==0\n");
         return 0;
     }
     if( element_max > node_cnt ){
         // can not allocate enough nodes.
-        Uart_Printf(current_tcb, "[Create_Queue] doesn't have enough nodes, \
+        // Uart_Printf(current_tcb, "[Create_Queue] doesn't have enough nodes, \
         %d > %d\n", element_max, node_cnt);
         return 0;
     }
-    Uart_Printf(current_tcb, "element_max = %d, node_cnt = %d\n", element_max, node_cnt);
+    // Uart_Printf(current_tcb, "element_max = %d, node_cnt = %d\n", element_max, node_cnt);
     for(i=0; i<sizeof(queue_list)/sizeof(queue_list[0]); i++){
         //find empty queue
         if(!Is_Queue_Using(&queue_list[i])){
@@ -118,7 +118,7 @@ Queue* Create_Queue(int element_max)
             return &queue_list[i];
         } 
     }
-    Uart_Printf(current_tcb, "[Create_Queue] doesn't have enough queue\n");
+    // Uart_Printf(current_tcb, "[Create_Queue] doesn't have enough queue\n");
     return (Queue*) 0;
 }
 

@@ -10,41 +10,63 @@ extern volatile int tim4_timeout;
 extern volatile int systick_flag;
 extern Queue ready_Queues[MAX_PRIORITY];
 extern Queue* signaling_Queue;
+
 void Task0(void *para){
+	volatile int i, j;
+	OS_Set_Task_Block(current_tcb, 500);
+
+	Uart_Printf(current_tcb, "Task0 : Semaphore Take!\n");
+
+	OS_Mutex_Lock(1);
+
+	for(j=0;j<20;j++){
+		for(i=0;i<0x100000;i++);
+		LED_1_Toggle();
+	}
+
+	OS_Mutex_Unlock(1);
+
+	Uart_Printf(current_tcb, "Task0 : Semaphore Give!\n");
 	for(;;)
 	{
-		// Uart_Printf(current_tcb, "Task 0 start\n");
+		OS_Set_Task_Block(current_tcb, 500);
 	}
 }
 
 void Task1(void *para)
 {
-	volatile int i =0;
-	static Signal_st data;
-	char action_flag=0;
+	volatile int i;
+
+	OS_Set_Task_Block(current_tcb, 1100);
+	Uart_Printf(current_tcb, "Task1 : Run!\n");
+
 	for(;;)
 	{
-		LED_0_Only_On();
 		for(i=0;i<0x100000;i++);
-		LED_0_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 500);
+		Uart_Printf(current_tcb, ".");
 	}
 }
 
 void Task2(void *para)
 {
-	volatile int i =0;
-	for(;;){
-		LED_1_Only_On();
-		for(i=0;i<0x100000;i++);
-		LED_1_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 300);
+	volatile int i,  j;
+
+	Uart_Printf(current_tcb, "Task2 : Semaphore Take!\n");
+	OS_Mutex_Lock(1);
+
+	for(j=0; j<20; j++){
+		for(i=0; i<0x100000; i++);
+		LED_0_Toggle();
 	}
-	
+
+	OS_Mutex_Unlock(1);
+	Uart_Printf(current_tcb, "Task2 : Semaphore Give\n");
+
+	for(;;)
+	{
+		OS_Set_Task_Block(current_tcb, 1000);
+		Uart_Printf(current_tcb, ".\n");
+	}
 }
 
 /*
@@ -76,6 +98,7 @@ void Key_Receive_Task(void *para)
 	unsigned int timeout;
 	for(;;)
 	{
+		Uart_Printf(current_tcb, "Key_Receive_Task\n");
 		timeout = sys_cnt;
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){
 			node = Dequeue(current_tcb->task_message_q);
@@ -103,13 +126,13 @@ void Key_Receive_Task(void *para)
 
 void Main(void)
 {
-	// Uart_Printf("M3-Mini RTOS\n");
-	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
+	Uart_Printf(current_tcb, "M3-Mini RTOS\n");
+	OS_Init();
 	
-	OS_Create_Task_Simple(Task0, (void*)0, 6, 2048,4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 3, 2048,4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 2, 2048,4,10); 
-	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 1, 2048,sizeof(int), 10); 
+	OS_Create_Task_Simple(Task0, (void*)0, 1, 2048,4,10);
+	OS_Create_Task_Simple(Task1, (void*)0, 2, 2048,4,10);
+	OS_Create_Task_Simple(Task2, (void*)0, 3, 2048,4,10); 
+	// OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 1, 2048,sizeof(int), 10); 
 	
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 

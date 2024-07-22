@@ -6,6 +6,7 @@
 #define MAX_TCB					(20)
 #define MAX_PRIORITY 			(10)
 #define MAX_TASKS 				(100)
+#define MAX_MUTEX 				(5)
 #define BLOCK_LIST_SIZE			(5)
 #define SYSTICK					(1)
 #define SYS_CNT_MAX				(UINT32_MAX / SYSTICK)
@@ -32,6 +33,10 @@ typedef enum {
 	TASK_STATE_MAX,
 }Task_State;
 
+typedef enum {
+	NONE = 0,
+	Printf,
+}Blocked_Reason;
 
 /* [ Type ] */
 typedef struct _signal{
@@ -41,14 +46,21 @@ typedef struct _signal{
 typedef struct _tcb{
 	unsigned long* top_of_stack;		
 	int no_task;					
-	int prio;						
+	int prio;
+	int original_prio;		
 	int state;						
 	unsigned int wakeup_target_time;
 	unsigned int systick_cnt_at_blocked; // for debug
 	struct _tcb* next;
 	Queue* task_message_q;
 	char event_wait_flag;
+	int blocked_mutex_id;
 }TCB;
+
+typedef struct {
+    int owner;
+    int locked;
+} Mutex;
 
 /* [ Macro ] */
 
@@ -61,4 +73,6 @@ extern void OS_Scheduler_Start(void);
 void OS_Set_Task_Block(TCB* task, unsigned int block_time);
 TCB* _OS_Get_NextTask();
 void _OS_Init_Scheduler();
+int OS_Mutex_Lock(int idx);
+void OS_Mutex_Unlock(int idx);
 #endif

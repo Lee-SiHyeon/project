@@ -19,6 +19,10 @@ Queue* ready_Queues[MAX_PRIORITY];
 Queue* signaling_Queue;
 extern volatile unsigned int sys_cnt;
 
+// int uart_Mutex;
+int mutex_is_ready;
+
+Mutex mutexs[MAX_MUTEX];
 /* Function Prototype */
 
 void OS_Init(void)
@@ -113,6 +117,8 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	ptcb->top_of_stack[15] = INIT_PSR;
 
 	ptcb->prio = prio;
+	ptcb->original_prio = prio;
+	ptcb->blocked_mutex_id = -1;
 	ptcb->state = TASK_STATE_READY;
 	ptcb->next = 0;
 	ptcb->wakeup_target_time = 0;
@@ -132,8 +138,12 @@ void OS_Scheduler_Start(void)
 	int i;
 
 	// 현재는 선택된 첫 task의 실행만 진행하고 있음 (임의로 tcb[0]의 task를 현재 실행 할 태스크로 정의 (추후 정책에 따른 선택의 코드로 변경 필요)
-	current_tcb = &tcb[0];
+	current_tcb = &tcb[2];
 	p_current_tcb = &current_tcb;
+
+	// uart_Mutex = -1;
+	mutex_is_ready = 1;
+
 	// Exception Priority 초기화
 	SCB->SHP[15 - 4] = 0xf << 4; // SysTick Exception Priority : Lowest Priority
 	SCB->SHP[14 - 4] = 0xf << 4; // PendSV Exception Priority : Lowest Priority
@@ -262,3 +272,111 @@ void OS_Set_Task_Block(TCB* task, unsigned int block_time){
 	return;
 }
 
+int OS_Create_Mutex(void) {
+    int i;
+
+    __disable_irq();
+    for (i = 0; i < MAX_MUTEX; i++) {
+        if (mutexs[i].locked == 0) {
+			mutexs[i].owner = -1;
+            __enable_irq();
+            return i;
+        }
+    }
+    __enable_irq();
+    return -1;
+}
+
+int OS_Mutex_Lock(int idx) {
+	if(mutex_is_ready == 0)
+		return 1;
+    __disable_irq();
+    if (mutexs[idx].locked == 0 || (mutexs[idx].locked == 1 && mutexs[idx].owner == current_tcb->no_task)) {
+		mutexs[idx].locked = 1;
+        mutexs[idx].owner = current_tcb->no_task;
+        __enable_irq();
+        return 1;
+    } 
+	else {
+		if (tcb[mutexs[idx].owner].prio > current_tcb->prio) {
+			// 여기에 ready_Queues[tcb[mutexs[idx].owner].prio]에서 mutexs[idx].owner 꺼내서
+			// ready_Queues[current_tcb->prio]에 넣어줘야함.
+            tcb[mutexs[idx].owner].prio = current_tcb->prio;
+        }
+		current_tcb->blocked_mutex_id = idx;
+		current_tcb->state = TASK_STATE_BLOCKED;
+		current_tcb->wakeup_target_time = 0xFFFFFFFF;
+        __enable_irq();
+		SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
+        return 0;
+    }
+}
+
+void OS_Mutex_Unlock(int idx) {
+	if(mutex_is_ready == 0)
+		return;
+    __disable_irq();
+    if ( mutexs[idx].locked == 1 && mutexs[idx].owner == current_tcb->no_task) {
+		tcb[mutexs[idx].owner].prio = tcb[mutexs[idx].owner].original_prio;
+		int i;
+		for(i = 0; i< MAX_TCB; i++) {
+			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+				(tcb[i].blocked_mutex_id == idx))
+			{
+				tcb[i].state = TASK_STATE_READY;
+				tcb[i].blocked_mutex_id = -1;
+				tcb[i].wakeup_target_time = 0;
+				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
+			}
+		}
+		mutexs[idx].locked = 0;
+    }
+    __enable_irq();
+}
+
+
+// void OS_Mutex_Unlock() {
+//     // __disable_irq();
+// 	if(mutex_is_ready == 0)
+// 		return;
+//     if (uart_Mutex == current_tcb->no_task) {
+// 		tcb[uart_Mutex].prio = tcb[uart_Mutex].original_prio;
+// 		int i;
+// 		for(i = 0; i< MAX_TCB; i++) {
+// 			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+// 				(tcb[i].blocked_mutex_id == Printf))
+// 			{
+// 				tcb[i].state = TASK_STATE_READY;
+// 				tcb[i].blocked_mutex_id = 0;
+// 				tcb[i].wakeup_target_time = 0;
+// 				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
+// 			}
+// 		}
+// 		uart_Mutex = -1;
+//     }
+//     // __enable_irq();
+// }
+
+
+
+// void OS_Mutex_Unlock() {
+//     // __disable_irq();
+// 	if(mutex_is_ready == 0)
+// 		return;
+//     if (uart_Mutex == current_tcb->no_task) {
+// 		tcb[uart_Mutex].prio = tcb[uart_Mutex].original_prio;
+// 		int i;
+// 		for(i = 0; i< MAX_TCB; i++) {
+// 			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+// 				(tcb[i].blocked_mutex_id == Printf))
+// 			{
+// 				tcb[i].state = TASK_STATE_READY;
+// 				tcb[i].blocked_mutex_id = 0;
+// 				tcb[i].wakeup_target_time = 0;
+// 				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
+// 			}
+// 		}
+// 		uart_Mutex = -1;
+//     }
+//     // __enable_irq();
+// }
