@@ -159,10 +159,10 @@ void OS_Scheduler_Start(void)
 TCB* _OS_Get_NextTask() {
 	int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
+		
         if (!Is_Queue_Empty(ready_Queues[i])) {
 			Node* node = Dequeue(ready_Queues[i]);
 			TCB* task = (TCB*)node->data;
-
             return task;
         }
     }
@@ -277,9 +277,11 @@ int OS_Create_Mutex(void) {
 
     __disable_irq();
     for (i = 0; i < MAX_MUTEX; i++) {
-        if (mutexs[i].locked == 0) {
+        if (mutexs[i].used == 0) {
+			mutexs[i].used = 1;
 			mutexs[i].owner = -1;
             __enable_irq();
+			Uart_Printf(current_tcb, "OS_Create_Mutex %d", i);
             return i;
         }
     }
@@ -291,17 +293,16 @@ int OS_Mutex_Lock(int idx) {
 	if(mutex_is_ready == 0)
 		return 1;
     __disable_irq();
-    if (mutexs[idx].locked == 0 || (mutexs[idx].locked == 1 && mutexs[idx].owner == current_tcb->no_task)) {
-		mutexs[idx].locked = 1;
+    if (mutexs[idx].owner == -1 || mutexs[idx].owner == current_tcb->no_task) {
         mutexs[idx].owner = current_tcb->no_task;
         __enable_irq();
         return 1;
     } 
 	else {
 		if (tcb[mutexs[idx].owner].prio > current_tcb->prio) {
-			// 여기에 ready_Queues[tcb[mutexs[idx].owner].prio]에서 mutexs[idx].owner 꺼내서
-			// ready_Queues[current_tcb->prio]에 넣어줘야함.
+			Remove_Task_From_Ready_Queue(ready_Queues[tcb[mutexs[idx].owner].prio], mutexs[idx].owner);
             tcb[mutexs[idx].owner].prio = current_tcb->prio;
+			Enqueue(ready_Queues[current_tcb->prio], &tcb[mutexs[idx].owner], TCB_PTR);
         }
 		current_tcb->blocked_mutex_id = idx;
 		current_tcb->state = TASK_STATE_BLOCKED;
@@ -316,67 +317,48 @@ void OS_Mutex_Unlock(int idx) {
 	if(mutex_is_ready == 0)
 		return;
     __disable_irq();
-    if ( mutexs[idx].locked == 1 && mutexs[idx].owner == current_tcb->no_task) {
+    if ( mutexs[idx].owner == current_tcb->no_task) {
 		tcb[mutexs[idx].owner].prio = tcb[mutexs[idx].owner].original_prio;
 		int i;
 		for(i = 0; i< MAX_TCB; i++) {
 			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
 				(tcb[i].blocked_mutex_id == idx))
 			{
+				Uart_Printf(current_tcb, "Unlock %d %d \n", idx, i);
 				tcb[i].state = TASK_STATE_READY;
 				tcb[i].blocked_mutex_id = -1;
 				tcb[i].wakeup_target_time = 0;
 				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
 			}
 		}
-		mutexs[idx].locked = 0;
+		mutexs[idx].owner = -1;
     }
     __enable_irq();
 }
 
 
-// void OS_Mutex_Unlock() {
-//     // __disable_irq();
-// 	if(mutex_is_ready == 0)
-// 		return;
-//     if (uart_Mutex == current_tcb->no_task) {
-// 		tcb[uart_Mutex].prio = tcb[uart_Mutex].original_prio;
-// 		int i;
-// 		for(i = 0; i< MAX_TCB; i++) {
-// 			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
-// 				(tcb[i].blocked_mutex_id == Printf))
-// 			{
-// 				tcb[i].state = TASK_STATE_READY;
-// 				tcb[i].blocked_mutex_id = 0;
-// 				tcb[i].wakeup_target_time = 0;
-// 				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
-// 			}
-// 		}
-// 		uart_Mutex = -1;
-//     }
-//     // __enable_irq();
-// }
+void Remove_Task_From_Ready_Queue(Queue* queue, int task_id) {
+    Node* current = queue->front;
+    Node* previous = 0;
 
-
-
-// void OS_Mutex_Unlock() {
-//     // __disable_irq();
-// 	if(mutex_is_ready == 0)
-// 		return;
-//     if (uart_Mutex == current_tcb->no_task) {
-// 		tcb[uart_Mutex].prio = tcb[uart_Mutex].original_prio;
-// 		int i;
-// 		for(i = 0; i< MAX_TCB; i++) {
-// 			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
-// 				(tcb[i].blocked_mutex_id == Printf))
-// 			{
-// 				tcb[i].state = TASK_STATE_READY;
-// 				tcb[i].blocked_mutex_id = 0;
-// 				tcb[i].wakeup_target_time = 0;
-// 				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
-// 			}
-// 		}
-// 		uart_Mutex = -1;
-//     }
-//     // __enable_irq();
-// }
+    while (current != 0) {
+        if (current->data == &tcb[task_id]) {
+			Uart_Printf(current_tcb, "Remove_Task_From_Ready_Queue %d \n", task_id);
+            if (previous == 0) {
+                queue->front = current->next;
+                if (queue->front == 0) {
+                    queue->rear = 0;
+                }
+            } else {
+                previous->next = current->next;
+                if (current->next == 0) {
+                    queue->rear = previous;
+                }
+            }
+            queue->element_cnt--;
+            return;
+        }
+        previous = current;
+        current = current->next;
+    }
+}

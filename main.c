@@ -11,20 +11,25 @@ extern volatile int systick_flag;
 extern Queue ready_Queues[MAX_PRIORITY];
 extern Queue* signaling_Queue;
 
+extern Mutex mutexs[MAX_MUTEX];
+volatile int no_mutex;
+
 void Task0(void *para){
 	volatile int i, j;
 	OS_Set_Task_Block(current_tcb, 500);
 
 	Uart_Printf(current_tcb, "Task0 : Semaphore Take!\n");
 
-	OS_Mutex_Lock(1);
+	OS_Mutex_Lock(no_mutex);
+	Uart_Printf(current_tcb, "Task0 : %d %d!\n", mutexs[no_mutex].owner, mutexs[no_mutex].used);
+
 
 	for(j=0;j<20;j++){
 		for(i=0;i<0x100000;i++);
 		LED_1_Toggle();
 	}
 
-	OS_Mutex_Unlock(1);
+	OS_Mutex_Unlock(no_mutex);
 
 	Uart_Printf(current_tcb, "Task0 : Semaphore Give!\n");
 	for(;;)
@@ -50,16 +55,18 @@ void Task1(void *para)
 void Task2(void *para)
 {
 	volatile int i,  j;
+	no_mutex = OS_Create_Mutex();
 
 	Uart_Printf(current_tcb, "Task2 : Semaphore Take!\n");
-	OS_Mutex_Lock(1);
+	OS_Mutex_Lock(no_mutex);
 
+	Uart_Printf(current_tcb, "Task2 : %d %d!\n", mutexs[no_mutex].owner, mutexs[no_mutex].used);
 	for(j=0; j<20; j++){
 		for(i=0; i<0x100000; i++);
 		LED_0_Toggle();
 	}
 
-	OS_Mutex_Unlock(1);
+	OS_Mutex_Unlock(no_mutex);
 	Uart_Printf(current_tcb, "Task2 : Semaphore Give\n");
 
 	for(;;)

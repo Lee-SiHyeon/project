@@ -53,8 +53,8 @@ void Uart1_Send_String(char *pt)
 
 void Uart1_Printf(TCB* tcb, char *fmt,  ...)
 {
-	if (!OS_Mutex_Lock(0))
-		return;
+	// if (!OS_Mutex_Lock(0))
+	// 	return;
 
 	va_list ap;
 	char string[128];
@@ -64,7 +64,7 @@ void Uart1_Printf(TCB* tcb, char *fmt,  ...)
 	Uart1_Send_String(string);
 	va_end(ap);
 
-	OS_Mutex_Unlock(0);
+	// OS_Mutex_Unlock(0);
 }
 
 void Uart1_RX_Interrupt_Enable(int en)

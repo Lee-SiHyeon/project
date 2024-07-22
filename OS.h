@@ -59,7 +59,7 @@ typedef struct _tcb{
 
 typedef struct {
     int owner;
-    int locked;
+    int used;
 } Mutex;
 
 /* [ Macro ] */
@@ -75,4 +75,5 @@ TCB* _OS_Get_NextTask();
 void _OS_Init_Scheduler();
 int OS_Mutex_Lock(int idx);
 void OS_Mutex_Unlock(int idx);
+void Remove_Task_From_Ready_Queue(Queue* queue, int task_id);
 #endif
