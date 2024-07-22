@@ -49,7 +49,7 @@ void Uart1_Send_String(char *pt)
 	}
 }
 
-void Uart1_Printf(char *fmt,...)
+void Uart1_Printf(TCB* tcb, char *fmt,  ...)
 {
 	va_list ap;
 	char string[128];

@@ -26,10 +26,12 @@
 #include "device_driver.h"
 #include "OS.h"
 #include "queue.h"
+extern TCB* current_tcb;
+
 void Invalid_ISR(void)
 {
-  Uart1_Printf("Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
-  Uart1_Printf("Invalid_ISR: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0) - 16);
+  Uart1_Printf(current_tcb, "Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
+  Uart1_Printf(current_tcb, "Invalid_ISR: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0) - 16);
   for(;;);
 }
 
@@ -41,26 +43,26 @@ static void Stack_Dump(const char * stack, unsigned int * sp)
 
 	for(i=0; i<(sizeof(Stack_reg)/sizeof(Stack_reg[0])); i++)
 	{
-		Uart1_Printf("%s[%d],%s=0x%.8X\n", stack, i, Stack_reg[i], sp[i]);
+		Uart1_Printf(current_tcb, "%s[%d],%s=0x%.8X\n", stack, i, Stack_reg[i], sp[i]);
 	}
 }
 
 static void Fault_Report(unsigned int * msp, unsigned int lr, unsigned int * psp)
 {
-	Uart1_Printf("LR(EXC_RETURN)=0x%.8X\n", lr);
-	Uart1_Printf("MSP=0x%.8X\n", msp);
-	Uart1_Printf("PSP=0x%.8X\n", psp);
+	Uart1_Printf(current_tcb, "LR(EXC_RETURN)=0x%.8X\n", lr);
+	Uart1_Printf(current_tcb, "MSP=0x%.8X\n", msp);
+	Uart1_Printf(current_tcb, "PSP=0x%.8X\n", psp);
 
 	switch((lr & (0xF<<28))|(lr & 0xF))
 	{
-		case 0xF0000001: Uart1_Printf("Exception occurs from handler mode\n"); Stack_Dump("MSP", msp); break;
-		case 0xF0000009: Uart1_Printf("Exception occurs from thread mode with MSP\n"); Stack_Dump("MSP", msp); break;
-		case 0xF000000d: Uart1_Printf("Exception occurs from thread mode with PSP\n"); Stack_Dump("PSP", psp); break;
-		default: Uart1_Printf("Invalid exception return value => %#.8X\n", lr & 0xf); break;
+		case 0xF0000001: Uart1_Printf(current_tcb, "Exception occurs from handler mode\n"); Stack_Dump("MSP", msp); break;
+		case 0xF0000009: Uart1_Printf(current_tcb, "Exception occurs from thread mode with MSP\n"); Stack_Dump("MSP", msp); break;
+		case 0xF000000d: Uart1_Printf(current_tcb, "Exception occurs from thread mode with PSP\n"); Stack_Dump("PSP", psp); break;
+		default: Uart1_Printf(current_tcb, "Invalid exception return value => %#.8X\n", lr & 0xf); break;
 	}
 
-	Uart1_Printf("SHCSR => %#.8X\n", SCB->SHCSR);
-	Uart1_Printf("CFSR(Fault Reason) => %#.8X\n", SCB->CFSR);
+	Uart1_Printf(current_tcb, "SHCSR => %#.8X\n", SCB->SHCSR);
+	Uart1_Printf(current_tcb, "CFSR(Fault Reason) => %#.8X\n", SCB->CFSR);
 }
 
 /*******************************************************************************
@@ -73,7 +75,7 @@ static void Fault_Report(unsigned int * msp, unsigned int lr, unsigned int * psp
 void NMI_Handler(void)
 {
 	Peri_Set_Bit(RCC->CIR, 23);
-	Uart1_Printf("HSE fail!\n");
+	Uart1_Printf(current_tcb, "HSE fail!\n");
 
 	/* Write rescue code */
 }
@@ -87,15 +89,15 @@ void NMI_Handler(void)
  *******************************************************************************/
 void HardFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
 {
-	Uart1_Printf("Hard Fault!\n");
+	Uart1_Printf(current_tcb, "Hard Fault!\n");
 
 	Fault_Report(msp, lr, psp);
 
-	Uart1_Printf("MMFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 7));
-	Uart1_Printf("MMFAR => %#.8X\n", SCB->MMFAR);
-	Uart1_Printf("BFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 15));
-	Uart1_Printf("BFAR => %#.8X\n", SCB->BFAR);
-	Uart1_Printf("HFSR(Hard Fault Reason) => %#.8X\n", SCB->HFSR);
+	Uart1_Printf(current_tcb, "MMFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 7));
+	Uart1_Printf(current_tcb, "MMFAR => %#.8X\n", SCB->MMFAR);
+	Uart1_Printf(current_tcb, "BFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 15));
+	Uart1_Printf(current_tcb, "BFAR => %#.8X\n", SCB->BFAR);
+	Uart1_Printf(current_tcb, "HFSR(Hard Fault Reason) => %#.8X\n", SCB->HFSR);
 
 	for(;;);
 }
@@ -109,12 +111,12 @@ void HardFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
  *******************************************************************************/
 void MemManage_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
 {
-	Uart1_Printf("Memory Management Fault!\n");
+	Uart1_Printf(current_tcb, "Memory Management Fault!\n");
 
 	Fault_Report(msp, lr, psp);
 
-	Uart1_Printf("MMFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 7));
-	Uart1_Printf("MMFAR => %#.8X\n", SCB->MMFAR);
+	Uart1_Printf(current_tcb, "MMFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 7));
+	Uart1_Printf(current_tcb, "MMFAR => %#.8X\n", SCB->MMFAR);
 
 	for(;;);
 }
@@ -128,12 +130,12 @@ void MemManage_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
  *******************************************************************************/
 void BusFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
 {
-	Uart1_Printf("Bus Fault!\n");
+	Uart1_Printf(current_tcb, "Bus Fault!\n");
 
 	Fault_Report(msp, lr, psp);
 
-	Uart1_Printf("BFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 15));
-	Uart1_Printf("BFAR => %#.8X\n", SCB->BFAR);
+	Uart1_Printf(current_tcb, "BFAR Valid => %d\n", Macro_Check_Bit_Set(SCB->CFSR, 15));
+	Uart1_Printf(current_tcb, "BFAR => %#.8X\n", SCB->BFAR);
 
 	for(;;);
 }
@@ -147,7 +149,7 @@ void BusFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
  *******************************************************************************/
 void UsageFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
 {
-	Uart1_Printf("Usage Fault!\n");
+	Uart1_Printf(current_tcb, "Usage Fault!\n");
 	Fault_Report(msp, lr, psp);
 	for(;;);
 }
@@ -170,7 +172,7 @@ void UsageFault_Handler(unsigned int * msp, unsigned int lr, unsigned int * psp)
  *******************************************************************************/
 void DebugMon_Handler(void)
 {
-	Uart1_Printf("DebugMon Call\n");
+	Uart1_Printf(current_tcb, "DebugMon Call\n");
 	for(;;);
 }
 

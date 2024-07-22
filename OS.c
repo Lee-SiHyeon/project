@@ -99,7 +99,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	if( q_element_max !=0 && q_element_size !=0 ){
 		ptcb->task_message_q = (Queue*)_OS_Get_Queue(q_element_size, q_element_max);
 	}else{
-		Uart_Printf("invalid param, q_element_max = %d, q_element_size = %d\n",\
+		Uart_Printf(ptcb, "invalid param, q_element_max = %d, q_element_size = %d\n",\
 		q_element_max, q_element_size);
 		ptcb->task_message_q = (Queue*) 0;
 	}
@@ -121,7 +121,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
         return 0;
     Enqueue(ready_Queues[ptcb->prio], ptcb, TCB_PTR);
 
-	Uart_Printf("idx_tcb = %d, ptcb = %x\n", idx_tcb-1, ptcb);
+	Uart_Printf(ptcb, "idx_tcb = %d, ptcb = %x\n", idx_tcb-1, ptcb);
 	return ptcb->no_task;
 }
 

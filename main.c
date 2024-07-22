@@ -13,7 +13,7 @@ extern Queue* signaling_Queue;
 void Task0(void *para){
 	for(;;)
 	{
-		// Uart_Printf("Task 0 start\n");
+		// Uart_Printf(current_tcb, "Task 0 start\n");
 	}
 }
 
@@ -80,14 +80,14 @@ void Key_Receive_Task(void *para)
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){
 			node = Dequeue(current_tcb->task_message_q);
 			timeout = sys_cnt + 1000;
-			Uart_Printf("Dequeue data = %c\n", (int)node->data);
+			Uart_Printf(current_tcb, "Dequeue data = %c\n", (int)node->data);
 		}
 		while(timeout>sys_cnt){
-			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
+			// Uart_Printf(current_tcb, "tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
 			if(!Is_Queue_Empty(current_tcb->task_message_q)){
 				node = Dequeue(current_tcb->task_message_q);
 				timeout = sys_cnt+1000;
-				Uart_Printf("in timeout Dequeue data = %c\n", (int)node->data);
+				Uart_Printf(current_tcb, "in timeout Dequeue data = %c\n", (int)node->data);
 			}else{
 				LED_All_On();
 				for(i=0;i<0x100000;i++);
@@ -95,7 +95,7 @@ void Key_Receive_Task(void *para)
 				for(i=0;i<0x100000;i++);
 			}
 		}
-		// Uart_Printf("Key task blocked!!\n");
+		// Uart_Printf(current_tcb, "Key task blocked!!\n");
 		OS_Set_Task_Block(current_tcb, 5000);
 	}
 }
@@ -103,7 +103,7 @@ void Key_Receive_Task(void *para)
 
 void Main(void)
 {
-	Uart_Printf("M3-Mini RTOS\n");
+	// Uart_Printf("M3-Mini RTOS\n");
 	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
 	
 	OS_Create_Task_Simple(Task0, (void*)0, 6, 2048,4,10);
