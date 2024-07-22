@@ -10,42 +10,6 @@ extern volatile int tim4_timeout;
 extern volatile int systick_flag;
 extern Queue ready_Queues[MAX_PRIORITY];
 extern Queue* signaling_Queue;
-void Task0(void *para){
-	for(;;)
-	{
-		// Uart_Printf("Task 0 start\n");
-	}
-}
-
-void Task1(void *para)
-{
-	volatile int i =0;
-	static Signal_st data;
-	char action_flag=0;
-	for(;;)
-	{
-		LED_0_Only_On();
-		for(i=0;i<0x100000;i++);
-		LED_0_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 5000);
-	}
-}
-
-void Task2(void *para)
-{
-	volatile int i =0;
-	for(;;){
-		LED_1_Only_On();
-		for(i=0;i<0x100000;i++);
-		LED_1_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 5000);
-	}
-	
-}
 
 /*
 sw0: EXTI15_10_IRQHandler (kv: 1 key_value: 5)
@@ -105,18 +69,85 @@ void Key_Receive_Task(void *para)
 	}
 }
 
+void Game_Start_Task(void *para){
+	for(;;) {
+
+	}
+}
+
+void Airplane_Control_Task(void *para) {
+    for(;;) {
+        Update_Airplane_Position();
+        OS_Set_Task_Block(current_tcb, 50);
+    }
+}
+
+void Bullet_Management_Task(void *para) {
+    for(;;) {
+        if (Player_Shoots()) {
+            Generate_Bullet();
+		}
+        OS_Set_Task_Block(current_tcb, 50);
+    }
+}
+
+void Missile_Management_Task(void *para) {
+	// 조건
+		Generate_Missile();
+    for(;;) {
+		Move_Missiles();
+        OS_Set_Task_Block(current_tcb, 5000);
+    }
+}
+
+void Collision_Detection_Task(void *para) {
+    for(;;) {
+		// 비행기가 미사일 맞았을 때
+        if (Detect_Collision()) {
+            Game_Over();
+            break;
+        }
+
+		// 비행기가 쏜 미사일에 미사일이 맞았을 때
+		if(Missile_Hit_Detection()){
+			Remove_Missile();
+			Remove_Bullet();
+		}
+		OS_Set_Task_Block(current_tcb, 50);
+    }
+}
+
+void Buzzer_Control_Task(void *para) {
+    for(;;) {
+        Control_Buzzer();
+		OS_Set_Task_Block(current_tcb, 50);
+    }
+}
+
+void LDC_Display_Task(void *para) {
+    for(;;) {
+		for() // 비행기, 총알, 미사일, 점수가 달라졌으면 그린다.
+		{
+			Draw_Object(&object);
+		}
+        OS_Set_Task_Block(current_tcb, 10);
+    }
+}
 
 void Main(void)
 {
 	Uart_Printf("M3-Mini RTOS\n");
 	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
-	
-	OS_Create_Task_Simple(Task0, (void*)0, 4, 1024,sizeof(Node)+4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 3, 1024,sizeof(Node)+4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 3, 1024,sizeof(Node)+4,10); 
+
 	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 3, 2048,sizeof(Node)+4, 10); 
+    OS_Create_Task_Simple(Airplane_Control_Task, (void*)0, 1, ...);
+    OS_Create_Task_Simple(Bullet_Management_Task, (void*)0, 3);
+    OS_Create_Task_Simple(Missile_Management_Task, (void*)0, 5);
+    OS_Create_Task_Simple(Collision_Detection_Task, (void*)0, 3);
+    OS_Create_Task_Simple(Buzzer_Control_Task, (void*)0, 5);
+    OS_Create_Task_Simple(LDC_Display_Task, (void*)0, 5);
 	
-	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
+	OS_Scheduler_Start();
 
 	for(;;)
 	{
