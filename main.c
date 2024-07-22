@@ -29,7 +29,7 @@ void Task1(void *para)
 		LED_0_Only_Off();
 		for(i=0;i<0x100000;i++);
 		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 500);
+			OS_Set_Task_Block(current_tcb, 5000);
 	}
 }
 
@@ -42,7 +42,7 @@ void Task2(void *para)
 		LED_1_Only_Off();
 		for(i=0;i<0x100000;i++);
 		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 300);
+			OS_Set_Task_Block(current_tcb, 5000);
 	}
 	
 }
@@ -76,27 +76,32 @@ void Key_Receive_Task(void *para)
 	unsigned int timeout;
 	for(;;)
 	{
-		timeout = sys_cnt;
-		while(!Is_Queue_Empty(current_tcb->task_message_q)){
-			node = Dequeue(current_tcb->task_message_q);
-			timeout = sys_cnt + 1000;
-			Uart_Printf("Dequeue data = %c\n", (int)node->data);
-		}
-		while(timeout>sys_cnt){
-			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
-			if(!Is_Queue_Empty(current_tcb->task_message_q)){
+		if(current_tcb->state != TASK_STATE_BLOCKED){
+			timeout = sys_cnt;
+			while(!Is_Queue_Empty(current_tcb->task_message_q)){
 				node = Dequeue(current_tcb->task_message_q);
-				timeout = sys_cnt+1000;
-				Uart_Printf("in timeout Dequeue data = %c\n", (int)node->data);
-			}else{
-				LED_All_On();
-				for(i=0;i<0x100000;i++);
-				LED_All_Off();
-				for(i=0;i<0x100000;i++);
+				timeout = sys_cnt + 1000;
+				Uart_Printf("Dequeue data = %c\n", (int)node->data);
 			}
+			while(timeout>sys_cnt){
+				// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
+				if(!Is_Queue_Empty(current_tcb->task_message_q)){
+					node = Dequeue(current_tcb->task_message_q);
+					timeout = sys_cnt+1000;
+					Uart_Printf("in timeout Dequeue data = %c\n", (int)node->data);
+				}else{
+					LED_All_On();
+					for(i=0;i<0x100000;i++);
+					LED_All_Off();
+					for(i=0;i<0x100000;i++);
+				}
+			}
+			Uart_Printf("Key task blocked!!\n");
+			OS_Set_Task_Block(current_tcb, 5000);
+		}else{
+			Uart_Printf("this task is blocked\n");
 		}
-		// Uart_Printf("Key task blocked!!\n");
-		OS_Set_Task_Block(current_tcb, 5000);
+
 	}
 }
 
@@ -106,10 +111,10 @@ void Main(void)
 	Uart_Printf("M3-Mini RTOS\n");
 	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
 	
-	OS_Create_Task_Simple(Task0, (void*)0, 6, 2048,4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 3, 2048,4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 2, 2048,4,10); 
-	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 1, 2048,sizeof(int), 10); 
+	OS_Create_Task_Simple(Task0, (void*)0, 4, 1024,sizeof(Node)+4,10);
+	OS_Create_Task_Simple(Task1, (void*)0, 3, 1024,sizeof(Node)+4,10);
+	OS_Create_Task_Simple(Task2, (void*)0, 3, 1024,sizeof(Node)+4,10); 
+	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 3, 2048,sizeof(Node)+4, 10); 
 	
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 

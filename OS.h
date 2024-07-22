@@ -4,14 +4,14 @@
 #include "queue.h"
 /* [Constant] */
 #define MAX_TCB					(20)
-#define MAX_PRIORITY 			(10)
+#define MAX_PRIORITY 			(5)
 #define MAX_TASKS 				(100)
 #define BLOCK_LIST_SIZE			(5)
 #define SYSTICK					(1)
 #define SYS_CNT_MAX				(UINT32_MAX / SYSTICK)
 
 #define PRIO_HIGHEST			(0)
-#define PRIO_LOWEST				(10)
+#define PRIO_LOWEST				(MAX_PRIORITY)
 #define NUM_PRIO				(PRIO_LOWEST - PRIO_HIGHEST + 1)
 
 #define OS_SUCCESS				(0)
@@ -20,7 +20,7 @@
 #define OS_FAIL_ALLOCATE_QUEUE  (-3)
 
 #define STACK_SIZE				(8 * 1024)
-#define QUEUE_SIZE				(2 * 1024)
+#define QUEUE_SIZE				(4 * 1024)
 
 #define INIT_PSR				(0x01000000)
 

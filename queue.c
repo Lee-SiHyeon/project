@@ -3,19 +3,23 @@
 
 extern Queue ready_Queues[10];
 Node node_list[NODE_LIST_SIZE];
+
 int node_cnt =NODE_LIST_SIZE;
-Queue queue_list[20];
 extern volatile unsigned int sys_cnt;
 
 // 큐 초기화
 void Init_Queue(Queue* q) {
-    q->front = q->rear = 0;
-    q->element_cnt = 0;
+    q->front =0;
+    q->rear =0;
+    q->node_cnt=0;
+    q->node_max=0;
+    q->node_start=0;
+    q->is_using=0;
 }
 
 // 큐가 비어있는지 확인
 int Is_Queue_Empty(Queue* q) {
-    if(q->element_cnt==0) return 1;
+    if(q->front==0) return 1;
     return 0;
 }
 
@@ -28,15 +32,17 @@ void Init_Node_List() {
     int i;
     for(i=0; i<NODE_LIST_SIZE; i++)
 	{
+        node_list[i].data = 0;
+        node_list[i].type = 0;
 		node_list[i].next = 0;
 	}
 }
 
 // 큐에 task 추가
 int Enqueue(Queue* q, void* data, DataType type){
-    int i;
-    if( q->element_cnt >= q->element_max ) return 0;
-    for(i = 0; i < NODE_LIST_SIZE; i++){
+    int i = q->node_start;
+    
+    for(i; i < q->node_max; i++){
 		if(node_list[i].next == 0){
 			node_list[i].data = data;
             node_list[i].type = type;
@@ -47,32 +53,33 @@ int Enqueue(Queue* q, void* data, DataType type){
     if (q->rear == 0) {
         q->front = q->rear = &node_list[i];
     } else {
-        
         q->rear->next = &node_list[i];
         q->rear = &node_list[i];
     }
-    q->element_cnt++;
+    q->node_cnt++;
     return 1;
 }
 
 // 큐에서 task 제거
 Node* Dequeue(Queue* q) {
-    unsigned int start_tick = sys_cnt;
-    int data_ready = !Is_Queue_Empty(q);
-    if (data_ready == 0) {
-        while((sys_cnt - start_tick) < DEQUEUE_TIMEOUT)
-        {
-            // Uart_Printf("Dequeue timeout = %d\n", sys_cnt);
-            if (!Is_Queue_Empty(q))
-            {
-                data_ready = 1;
-                break;
-            }
-        }
-    }
-    if (data_ready == 0)
+    // unsigned int start_tick = sys_cnt;
+    // int data_ready = !Is_Queue_Empty(q);
+    // if (data_ready == 0) {
+    //     while((sys_cnt - start_tick) < DEQUEUE_TIMEOUT)
+    //     {
+    //         // Uart_Printf("Dequeue timeout = %d\n", sys_cnt);
+    //         if (!Is_Queue_Empty(q))
+    //         {
+    //             data_ready = 1;
+    //             break;
+    //         }
+    //     }
+    // }
+    // if (data_ready == 0)
+    //     return 0;
+    if(Is_Queue_Empty(q)){
         return 0;
-
+    }
     Node* node = q->front;
     if(q->front == q->front->next){
         // this queue will be empty after executing this dequeue.
@@ -87,7 +94,7 @@ Node* Dequeue(Queue* q) {
         q->rear = 0; // If queue becomes empty, rear should be NULL
     }
 
-    q->element_cnt--;
+    q->node_cnt--;
     return node;
 }
 
@@ -105,18 +112,6 @@ Queue* Create_Queue(int element_max)
         return 0;
     }
     Uart_Printf("element_max = %d, node_cnt = %d\n", element_max, node_cnt);
-    for(i=0; i<sizeof(queue_list)/sizeof(queue_list[0]); i++){
-        //find empty queue
-        if(!Is_Queue_Using(&queue_list[i])){
-            node_cnt -= element_max;
-            queue_list[i].front =0;
-            queue_list[i].rear =0;
-            queue_list[i].element_cnt =0;
-            queue_list[i].is_using = 1;
-            queue_list[i].element_max =element_max;
-            return &queue_list[i];
-        } 
-    }
     Uart_Printf("[Create_Queue] doesn't have enough queue\n");
     return (Queue*) 0;
 }

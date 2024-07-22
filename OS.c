@@ -9,8 +9,9 @@
 /* Global Variable */
 TCB tcb[MAX_TCB];
 char stack[STACK_SIZE] __attribute__((__aligned__(8)));
-char queue[QUEUE_SIZE] __attribute__((__aligned__(4)));
-
+// char queue[QUEUE_SIZE] __attribute__((__aligned__(4)));
+Queue queue_list[QUEUE_LIST_SIZE];
+extern Node node_list[NODE_LIST_SIZE];
 volatile TCB* current_tcb;
 volatile TCB* next_tcb;
 volatile TCB** p_current_tcb;
@@ -25,19 +26,27 @@ void OS_Init(void)
 {
 	_OS_Init_Scheduler();
 	int i;
+
 	for(i=0; i<MAX_TCB; i++)
 	{
 		tcb[i].no_task = i;
 	}
-	signaling_Queue = _OS_Get_Queue(8, 20);
-	Init_Node_List();
+	signaling_Queue = _OS_Get_Queue(sizeof(Node)+8, 20);
+	Uart_Printf("signaling_Queue = %x\n", signaling_Queue);
+	
 }
 
 // 스케줄러 초기화
 void _OS_Init_Scheduler() {
     int i;
+	for(i = 0; i< QUEUE_LIST_SIZE; i++)
+	{
+		Init_Queue(&queue_list[i]);
+	}
+	Init_Node_List();
 	for (i = 0; i < MAX_PRIORITY; i++) {
-        ready_Queues[i] = _OS_Get_Queue(4, 5);
+        ready_Queues[i] = _OS_Get_Queue(sizeof(Node), 5);
+		Uart_Printf("ready_Queue[%d] = %x\n",i, ready_Queues[i]);
     }
 }
 
@@ -56,19 +65,38 @@ char* _OS_Get_Stack(int size){
 }
 
 Queue* _OS_Get_Queue(int element_size, int element_max){
-	static char* queue_limit = queue + QUEUE_SIZE;
-	static char* pqueue = queue;
-	int size = 0;
-	Queue* ret;
+	static char* queue_limit = node_list + sizeof(node_list);
+	static char node_idx = 0;
 
-	size = element_size * element_max;
-	size = (size + 3) & ~0x3;
-	if( pqueue +size > queue_limit) return (Queue*)0;
-	ret = Create_Queue(element_max);
-	
-	if(!ret) return (Queue*)0;
-	
-	pqueue += size;
+	Queue* ret;
+	int node_start;
+	int node_end;
+	int i;
+	for(i=0; i<QUEUE_LIST_SIZE; i++){
+		if(queue_list[i].is_using ==0){
+			
+			ret = &queue_list[i];
+			ret->front =0;
+			ret->rear =0;
+			ret->node_cnt=0;
+			ret->node_max=0;
+			ret->node_start=0;
+			ret->is_using=1;
+			Uart_Printf("queue_list[%d] is selected %d, %d \n",i, queue_list[i].is_using, ret->is_using);
+			break;
+		}
+	}
+	if(node_list[node_idx].next == 0 && node_idx+element_max <NODE_LIST_SIZE){
+		//할당 가능.
+		ret->node_start = node_idx;
+		ret->node_max = node_idx+element_max;
+		node_idx +=element_max;
+	}else{
+		return 0;
+	}
+
+	Uart_Printf("node_idx = %d, ret->node_start =%d, ret->node_max = %d\n",\
+				node_idx, ret->node_start, ret->node_max);
 	return ret;
 }
 
@@ -98,6 +126,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	}
 	if( q_element_max !=0 && q_element_size !=0 ){
 		ptcb->task_message_q = (Queue*)_OS_Get_Queue(q_element_size, q_element_max);
+		Uart_Printf("idx_tcb = %d, ptcb->task_message_q = %x\n", idx_tcb, ptcb->task_message_q);
 	}else{
 		Uart_Printf("invalid param, q_element_max = %d, q_element_size = %d\n",\
 		q_element_max, q_element_size);
@@ -183,10 +212,12 @@ void _OS_Scheduler_Restore_Expired_TCB(void){
 	int i;
 	for(i=0; i< MAX_TCB; i++){
 		//깨워야하는 애들
-		if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+		if ((tcb[i].state==TASK_STATE_BLOCKED)  	&& \
+			(tcb[i].wakeup_target_time != 0)		&& \
 		   	(tcb[i].wakeup_target_time <= sys_cnt))
 		{
 			tcb[i].state = TASK_STATE_READY;
+			tcb[i].wakeup_target_time =0;
 			Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
 		}
 	}
