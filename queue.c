@@ -47,6 +47,7 @@ int Enqueue(Queue* q, void* data, DataType type){
 			node_list[i].data = data;
             node_list[i].type = type;
             node_list[i].next = &node_list[i];
+            node_list[i].prev = q->rear;
             break;
 		}
 	}
@@ -85,11 +86,12 @@ Node* Dequeue(Queue* q) {
         // this queue will be empty after executing this dequeue.
         q->front = 0; 
     }else{
+        q->front->next->prev = q->front->next;
         q->front = q->front->next;
     }
     
     node->next = 0;
-    
+    node->prev = 0;
     if (q->front == 0) {
         q->rear = 0; // If queue becomes empty, rear should be NULL
     }
@@ -116,6 +118,26 @@ Queue* Create_Queue(int element_max)
     return (Queue*) 0;
 }
 
+Node* Delete_Queue_node(Queue* q, int no_task){
+    int i = 0; 
+    Node* prev_node;
+    Node* next_node;
+    Node* node;
+    if (!Is_Queue_Empty(q) && ((TCB*)q->front->data)->no_task == no_task){
+        return Dequeue(q);
+    }
+    for(i=q->node_start; i<q->node_max; i++){
+        if(((TCB*)node_list[i].data)->no_task == no_task){
+            prev_node = node_list[i].prev;
+            next_node = node_list[i].next;
+            prev_node->next = next_node;
+            next_node->prev = prev_node;
+            node_cnt--;
+            node = &node_list[i];
+            return node;
+        }
+    }
+}
 // void Change_Priority(TCB* task, int priority) {
 //     if (priority < 0 || priority >= MAX_PRIORITY)
 //         return;

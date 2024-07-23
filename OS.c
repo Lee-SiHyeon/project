@@ -9,7 +9,6 @@
 /* Global Variable */
 TCB tcb[MAX_TCB];
 char stack[STACK_SIZE] __attribute__((__aligned__(8)));
-// char queue[QUEUE_SIZE] __attribute__((__aligned__(4)));
 Queue queue_list[QUEUE_LIST_SIZE];
 extern Node node_list[NODE_LIST_SIZE];
 volatile TCB* current_tcb;
@@ -20,6 +19,8 @@ Queue* ready_Queues[MAX_PRIORITY];
 Queue* signaling_Queue;
 extern volatile unsigned int sys_cnt;
 
+int mutex_is_init=0;
+Mutex mutexs[MAX_MUTEX];
 /* Function Prototype */
 
 void OS_Init(void)
@@ -33,7 +34,11 @@ void OS_Init(void)
 	}
 	signaling_Queue = _OS_Get_Queue(sizeof(Node)+8, 20);
 	Uart_Printf("signaling_Queue = %x\n", signaling_Queue);
-	
+	// Mutex init
+	for (i = 0; i < MAX_MUTEX; i++) {
+        mutexs[i].owner = -1;
+		mutexs[i].used = 0;
+    }
 }
 
 // 스케줄러 초기화
@@ -142,10 +147,12 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	ptcb->top_of_stack[15] = INIT_PSR;
 
 	ptcb->prio = prio;
+	ptcb->original_prio = prio;
+	ptcb->blocked_mutex_id = -1;
 	ptcb->state = TASK_STATE_READY;
 	ptcb->next = 0;
 	ptcb->wakeup_target_time = 0;
-	ptcb->event_wait_flag = 0;
+	ptcb->mutex_time=0;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
     Enqueue(ready_Queues[ptcb->prio], ptcb, TCB_PTR);
@@ -163,6 +170,7 @@ void OS_Scheduler_Start(void)
 	// 현재는 선택된 첫 task의 실행만 진행하고 있음 (임의로 tcb[0]의 task를 현재 실행 할 태스크로 정의 (추후 정책에 따른 선택의 코드로 변경 필요)
 	current_tcb = &tcb[0];
 	p_current_tcb = &current_tcb;
+
 	// Exception Priority 초기화
 	SCB->SHP[15 - 4] = 0xf << 4; // SysTick Exception Priority : Lowest Priority
 	SCB->SHP[14 - 4] = 0xf << 4; // PendSV Exception Priority : Lowest Priority
@@ -170,6 +178,7 @@ void OS_Scheduler_Start(void)
 	{
 		NVIC_SetPriority(i, 0xe);
 	}
+	mutex_is_init = 1;
 	SysTick_OS_Tick(SYSTICK);
 	_OS_Start_First_Task();
 }
@@ -178,11 +187,14 @@ void OS_Scheduler_Start(void)
 TCB* _OS_Get_NextTask() {
 	int i;
 	for (i = 0; i < MAX_PRIORITY; i++) {
-        if (!Is_Queue_Empty(ready_Queues[i])) {
+		
+        while(!Is_Queue_Empty(ready_Queues[i])){
 			Node* node = Dequeue(ready_Queues[i]);
 			TCB* task = (TCB*)node->data;
-
-            return task;
+			if (i == task->prio) {
+				// Uart_Printf("scheduler : task->prio = %d\n", task->no_task);
+				return task;
+			}
         }
     }
     return 0; // 실행할 task가 없음
@@ -242,6 +254,7 @@ void _OS_Scheduler_Handle_Signaling_Flag(void){
 	}
 	return;
 }
+
 void _OS_Scheduler_Before_Context_CB(TCB* task){
 	_OS_Scheduler_Handle_Signaling_Flag();
 	_OS_Scheduler_Restore_Expired_TCB();
@@ -285,11 +298,109 @@ void OS_Set_Task_Block(TCB* task, unsigned int block_time){
 
 	__disable_irq();
 	task->state = TASK_STATE_BLOCKED;
-	task->systick_cnt_at_blocked = sys_cnt;
 	task->wakeup_target_time = wakeup_time;
-	__enable_irq();
-
 	SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
+	__enable_irq();
+	
 	return;
 }
 
+int OS_Create_Mutex(void) {
+    int i;
+
+    __disable_irq();
+    for (i = 0; i < MAX_MUTEX; i++) {
+        if (mutexs[i].used == 0) {
+			mutexs[i].used = 1;
+			mutexs[i].owner = -1;
+            __enable_irq();
+			Uart1_Printf(current_tcb, "OS_Create_Mutex %d", i);
+            return i;
+        }
+    }
+    __enable_irq();
+    return -1;
+}
+
+int OS_Mutex_Lock(TCB* request_task, int mutex_idx) {
+	// OS is not inited yet.
+	if(mutex_is_init == 0){
+		Uart1_Printf("OS_Mutex_Lock: start\n");
+		return 1;
+	}
+		
+    __disable_irq();
+	// 1) no one does not use the mutex. 
+	// 2) now == request  
+	// -> can give the mutex.
+    if (mutexs[mutex_idx].owner == -1 || mutexs[mutex_idx].owner == request_task->no_task) {
+        mutexs[mutex_idx].owner = request_task->no_task;
+        __enable_irq();
+        return 1;
+    } 
+	else {
+	/*
+		priority inheritance
+		 - priority check
+		 - pop the task which has lower priority from ready queue.
+		 - modify priority of the lower to the higher
+		 - re-enqueue to the higher ready queue.
+		 - change the state of request_task to STATE_BLOCKED and save the mutex_id
+		 - Call scheduler
+	*/
+#ifdef FEATURE_PRIORITY_INHERITANCE
+		if (tcb[mutexs[mutex_idx].owner].prio > request_task->prio) {
+			tcb[mutexs[mutex_idx].owner].prio = request_task->prio;
+			Enqueue(ready_Queues[tcb[mutexs[mutex_idx].owner].prio], &tcb[mutexs[mutex_idx].owner], TCB_PTR);
+        }
+#endif
+		request_task->blocked_mutex_id = mutex_idx;
+		request_task->state = TASK_STATE_BLOCKED;
+		request_task->mutex_time = (unsigned int) sys_cnt;
+		SCB->ICSR = (1<<SCB_ICSR_PENDSVSET_Pos);
+        __enable_irq();
+        return 0;
+    }
+}
+
+void OS_Mutex_Unlock(TCB* request_task, int mutex_idx) {
+	int i;
+	unsigned int mutex_time_cmp =(unsigned int)0xffffffff;
+	int wakeup_task_no =-1;
+    __disable_irq();
+	if(tcb[mutexs[mutex_idx].owner].prio != tcb[mutexs[mutex_idx].owner].original_prio){
+		tcb[mutexs[mutex_idx].owner].prio = tcb[mutexs[mutex_idx].owner].original_prio;
+	}
+	
+	for(i = 0; i< MAX_TCB; i++) {
+		if ((tcb[i].state==TASK_STATE_BLOCKED) 		&& \
+			(tcb[i].blocked_mutex_id == mutex_idx)  && \
+			 tcb[i].wakeup_target_time == 0)
+		{	
+ 			if((tcb[i].mutex_time != 0 ) 			&&\
+			   (tcb[i].mutex_time < mutex_time_cmp))
+			{
+				wakeup_task_no = i;
+				mutex_time_cmp = tcb[i].mutex_time;
+			}
+		}
+	}
+	if(wakeup_task_no != -1){
+		tcb[wakeup_task_no].state = TASK_STATE_READY;
+		tcb[wakeup_task_no].blocked_mutex_id = -1;
+		tcb[wakeup_task_no].mutex_time = 0;
+		mutexs[mutex_idx].owner =wakeup_task_no;
+		Enqueue(ready_Queues[tcb[wakeup_task_no].prio], &tcb[wakeup_task_no], TCB_PTR);
+	}else{
+		mutexs[mutex_idx].owner = -1;
+	}
+    __enable_irq();
+	return;
+}
+
+
+void Remove_Task_From_Ready_Queue(Queue* q, int no_task) {
+	int i;
+	Delete_Queue_node(q, no_task);
+	return;
+}

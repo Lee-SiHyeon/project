@@ -29,6 +29,7 @@ typedef struct Node {
     void* data;
     DataType type;
     struct Node* next;
+    struct Node* prev;
 } Node;
 
 typedef struct Queue {

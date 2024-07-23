@@ -10,42 +10,121 @@ extern volatile int tim4_timeout;
 extern volatile int systick_flag;
 extern Queue ready_Queues[MAX_PRIORITY];
 extern Queue* signaling_Queue;
-void Task0(void *para){
+
+extern Mutex mutexs[MAX_MUTEX];
+volatile int no_mutex;
+
+extern int uart;
+#if 1 // same priority mutex test code;
+void Task0_idle(void *para)
+{
+	volatile int i;
 	for(;;)
 	{
-		// Uart_Printf("Task 0 start\n");
-	}
-}
+		// LED_0_Toggle();
+		// for(i = 0; i< 100000; i++);
+		// for(i =0; i< i<MAX_TCB ; i++){
 
-void Task1(void *para)
-{
-	volatile int i =0;
-	static Signal_st data;
-	char action_flag=0;
-	for(;;)
-	{
-		LED_0_Only_On();
-		for(i=0;i<0x100000;i++);
-		LED_0_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 5000);
+		// };
 	}
-}
 
-void Task2(void *para)
+}
+void Task1(void* para)
 {
-	volatile int i =0;
 	for(;;){
-		LED_1_Only_On();
-		for(i=0;i<0x100000;i++);
-		LED_1_Only_Off();
-		for(i=0;i<0x100000;i++);
-		if(current_tcb->state !=TASK_STATE_BLOCKED) 
-			OS_Set_Task_Block(current_tcb, 5000);
+		Uart1_Printf_mutex(current_tcb, "task111111111111111111111111111111111111111111111111111111111111111111\n");
 	}
 	
 }
+
+void Task2(void* para)
+{
+	for(;;){
+		Uart1_Printf_mutex(current_tcb, "task222222222222222222222222222222222222222222222222222222222222222222\n");
+	}
+}
+
+void Task3(void* para)
+{
+	for(;;){
+		Uart1_Printf_mutex(current_tcb, "task333333333333333333333333333333333333333333333333333333333333333333\n");
+	}
+}
+#endif
+#if 0 // priority inheritance test code
+void Task0_idle(void *para)
+{
+	volatile int i;
+	for(;;)
+	{
+		// LED_0_Toggle();
+		// for(i = 0; i< 100000; i++);
+		// for(i =0; i< i<MAX_TCB ; i++){
+
+		// };
+	}
+
+}
+void Task1(void* para)
+{
+	volatile int i, j;
+	OS_Set_Task_Block(current_tcb,500);
+
+	Uart_Printf("Task1 : Semaphore Take!\n");
+
+	OS_Mutex_Lock(current_tcb,no_mutex);
+
+	for(j=0;j<20;j++){
+		for(i=0;i<0x100000;i++);
+		LED_1_Toggle();
+	}
+
+	OS_Mutex_Unlock(current_tcb,no_mutex);
+
+	Uart_Printf("Task1 : Semaphore Give!\n");
+	for(;;)
+	{
+		OS_Set_Task_Block(current_tcb,500);
+	}
+}
+
+void Task2(void* para)
+{
+	volatile int i;
+
+	OS_Set_Task_Block(current_tcb,1100);
+	Uart_Printf("Task2 : Run!\n");
+
+	for(;;)
+	{
+		for(i=0;i<0x100000;i++);
+		Uart_Printf(".");
+	}
+}
+
+void Task3(void* para)
+{
+	volatile int i,  j;
+	no_mutex = OS_Create_Mutex();
+
+	Uart_Printf("Task3 : Semaphore Take!\n");
+	OS_Mutex_Lock(current_tcb,no_mutex);
+
+	for(j=0; j<20; j++){
+		for(i=0; i<0x100000; i++);
+		LED_0_Toggle();
+	}
+
+	OS_Mutex_Unlock(current_tcb,no_mutex);
+	Uart_Printf("Task3 : Semaphore Give\n");
+
+	for(;;)
+	{
+		OS_Set_Task_Block(current_tcb,1000);
+		Uart_Printf(".\n");
+	}
+}
+#endif
 
 /*
 sw0: EXTI15_10_IRQHandler (kv: 1 key_value: 5)
@@ -101,20 +180,19 @@ void Key_Receive_Task(void *para)
 		}else{
 			Uart_Printf("this task is blocked\n");
 		}
-
 	}
 }
 
 
 void Main(void)
 {
-	Uart_Printf("M3-Mini RTOS\n");
-	OS_Init();	// OS �ڷᱸ�� �ʱ�ȭ
-	
-	OS_Create_Task_Simple(Task0, (void*)0, 4, 1024,sizeof(Node)+4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 3, 1024,sizeof(Node)+4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 3, 1024,sizeof(Node)+4,10); 
-	OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 3, 2048,sizeof(Node)+4, 10); 
+	Uart1_Printf(current_tcb, "M3-Mini RTOS\n");
+	OS_Init();
+	OS_Create_Task_Simple(Task0_idle, (void*)0, 4, 1024,sizeof(Node)+4,10);
+	OS_Create_Task_Simple(Task1, (void*)0, 1, 1024,sizeof(Node)+4,10);
+	OS_Create_Task_Simple(Task2, (void*)0, 1, 1024,sizeof(Node)+4,10);
+	OS_Create_Task_Simple(Task3, (void*)0, 1, 1024,sizeof(Node)+4,10); 
+	// OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 3, 2048,sizeof(Node)+4, 10); 
 	
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
 
