@@ -49,7 +49,7 @@ void Uart1_Send_String(char *pt)
 	}
 }
 
-void Uart1_Printf(char *fmt,...)
+void Uart1_Printf(char *fmt,  ...)
 {
 	va_list ap;
 	char string[128];
@@ -58,6 +58,22 @@ void Uart1_Printf(char *fmt,...)
 	vsprintf(string,fmt,ap);
 	Uart1_Send_String(string);
 	va_end(ap);
+}
+
+void Uart1_Printf_mutex(TCB* tcb, char *fmt,  ...)
+{
+	if (!OS_Mutex_Lock(tcb, 0))
+		return;
+
+	va_list ap;
+	char string[128];
+
+	va_start(ap,fmt);
+	vsprintf(string,fmt,ap);
+	Uart1_Send_String(string);
+	va_end(ap);
+
+	OS_Mutex_Unlock(tcb, 0);
 }
 
 void Uart1_RX_Interrupt_Enable(int en)

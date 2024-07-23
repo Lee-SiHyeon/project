@@ -2,6 +2,7 @@
 #include "option.h"
 #include "macro.h"
 #include "malloc.h"
+#include "OS.h"
 
 extern void LED_Init(void);
 extern void LED_Display(unsigned int num);
@@ -24,6 +25,7 @@ extern void Uart1_Init(int baud);
 extern void Uart1_Send_Byte(char data);
 extern void Uart1_Send_String(char *pt);
 extern void Uart1_Printf(char *fmt,...);
+extern void Uart1_Printf_mutex(TCB* tcb, char *fmt,...);
 extern void Uart1_RX_Interrupt_Enable(int en);
 // Clock.c
 

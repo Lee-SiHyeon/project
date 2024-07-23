@@ -665,10 +665,10 @@ void USART1_IRQHandler(void)
 	static Signal_st uart_data;
 	uart_rx_data = USART1->DR;
 	// Uart_Printf("echo =%c\n",uart_rx_data);
-	NVIC_ClearPendingIRQ(USART1_IRQn);
 	uart_data.data = uart_rx_data;
 	uart_data.tcb_idx=3;
 	Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
+	NVIC_ClearPendingIRQ(USART1_IRQn);
 }
 
 /*******************************************************************************
