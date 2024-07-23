@@ -731,9 +731,17 @@ void EXTI15_10_IRQHandler(void)
 
 
 	static Signal_st key_input_data;
-	if(key_value==5) key_input_data.data = 321; //reset key
-	key_input_data.tcb_idx = 3; //
+	if(key_value==5) // sw 0
+	{
+		key_input_data.data = 321; //reset key
+		key_input_data.tcb_idx = 3; // Game Reset&Start Task
 
+	}
+	else if(key_value == 6) // sw 1
+	{
+		key_input_data.data = 1; 
+		key_input_data.tcb_idx = 5; // Bullet_Task
+	}
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
 	key_value = 0;

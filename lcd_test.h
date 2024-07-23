@@ -1,43 +1,44 @@
-/*
- * lcd_test.h
- *
- *  Created on: 2024. 7. 16.
- *      Author: yeeun99.kim
- */
+// /*
+//  * lcd_test.h
+//  *
+//  *  Created on: 2024. 7. 16.
+//  *      Author: yeeun99.kim
+//  */
 
-#ifndef LCD_TEST_H_
-#define LCD_TEST_H_
+// #ifndef LCD_TEST_H_
+// #define LCD_TEST_H_
 
-typedef struct {
-    int x, y;
-    int width, height;
-    const int **image;
-} GameObject;
+// typedef struct {
+//     int x, y;
+//     int prev_x, prev_y;
+//     int width, height;
+//     const int **image;
+//     int imageSize;
+//     char is_used;
+// } GameObject;
 
-typedef struct {
-    int x, y;
-    int width, height;
-    int isDrawing; //0: clear, 1: draw
-    int **image;
-} DrawingObject;
+// typedef enum {
+//     GAME_START = 0,
+//     GAME_PLAYING = 1,
+//     GAME_OVER = 2
+// } GameState;
 
-extern void Generate_Missile(GameObject *missile);
-extern void Draw_Image(GameObject *obj, int size);
-extern void Clear_Image(int x, int y, int w, int h, unsigned short Color);
-extern void DrawPlane(void);
-extern void ClearPlane(void);
-extern void DrawMissile(GameObject* missile);
-extern void ClearMissile(GameObject* missile);
-extern void Game_Init(void);
-extern void Game_Plane_Move(int dir);
-extern void Game_Missile_Generation(void);
-extern void Game_Missile_Move(void);
-extern void Game_Over(void);
-extern void Draw_LCD(void);
-extern void PLay_BGM(void);
-extern void intToStr(int score, char *str);
-extern void drawDigit(int x, int y, int digit);
-extern void drawScore(int x, int y, int score);
+// void Draw_Image(GameObject *obj, int size);
+// void Clear_Image(int x, int y, int w, int h, unsigned short Color);
 
+// void Game_Init(void);
 
-#endif /* LCD_TEST_H_ */
+// void Game_Missile_Generation(void);
+// void Generate_Bullet(void);
+
+// void Game_Plane_Move(int dir);
+// void Game_Missile_Move(void);
+// void Game_Bullet_Move(void);
+
+// int Check_Collision(GameObject* object1, GameObject* object2);
+
+// void Draw_LCD(void);
+
+// void Play_BGM(void);
+
+// #endif /* LCD_TEST_H_ */
