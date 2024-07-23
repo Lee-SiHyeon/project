@@ -58,6 +58,28 @@ void Task_2_1(void *para) //Move Plane
 			node = Dequeue(current_tcb->task_message_q);
 			if(node->data>=1 && node->data<=4)
 				Game_Plane_Move(node->data);
+			else if(node->data == 5)
+				Game_Bullet_Generation();
+			else if(node->data == 6)
+				Game_Init();
+
+			timeout = sys_cnt + 1000;
+		}
+		while(timeout>sys_cnt){
+			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
+			if(!Is_Queue_Empty(current_tcb->task_message_q)){
+				node = Dequeue(current_tcb->task_message_q);
+				timeout = sys_cnt+1000;
+				//task_message_q의 data 값이 **일 경우 동작
+				if(node->data>=1 && node->data<=4)
+					Game_Plane_Move(node->data);
+				else if(node->data == 5) 
+					Game_Bullet_Generation();
+				else if(node->data == 6)
+					Game_Init();
+			}else{
+				
+			}
 		}
 		//Uart_Printf("Key task blocked!!\n");
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -90,40 +112,6 @@ void Task_2_3(void *para) //Move Missile
 	
 }
 
-void Task_4_1(void *para) //Game Reset&Start
-{
-	volatile int i;
-	Node* node;
-	unsigned int timeout;
-
-	for(;;)
-	{
-   		Uart_Printf("Task4_1\n");
-		
-		timeout = sys_cnt;
-		while(!Is_Queue_Empty(current_tcb->task_message_q)){
-			node = Dequeue(current_tcb->task_message_q);
-
-
-			if(node->data==321) Game_Init();
-			timeout = sys_cnt + 1000;
-		}
-		while(timeout>sys_cnt){
-			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
-			if(!Is_Queue_Empty(current_tcb->task_message_q)){
-				node = Dequeue(current_tcb->task_message_q);
-				timeout = sys_cnt+1000;
-				if(node->data==321) Game_Init();
-			}else{
-				
-			}
-		}
-		//Uart_Printf("Key task blocked!!\n");
-		OS_Set_Task_Block(current_tcb, 100);
-	}
-	
-}
-
 void Task_4_2(void *para) //LCD Print
 {
 	volatile int i =0;
@@ -147,39 +135,6 @@ void Task_4_2(void *para) //LCD Print
 // 	}
 // }
 
-void Bullet_Task(void *para)
-{
-	volatile int i;
-	Node* node;
-	unsigned int timeout;
-	for(;;){
-		if(game_state_flag != GAME_PLAYING) continue;
-		timeout = sys_cnt;
-		while(!Is_Queue_Empty(current_tcb->task_message_q)){
-			node = Dequeue(current_tcb->task_message_q);
-			if(node->data == 1)
-				Game_Bullet_Generation();
-			
-			timeout = sys_cnt + 1000;
-		}
-		while(timeout>sys_cnt){
-			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
-			if(!Is_Queue_Empty(current_tcb->task_message_q)){
-				node = Dequeue(current_tcb->task_message_q);
-				timeout = sys_cnt+1000;
-				//task_message_q의 data 값이 **일 경우 동작
-				if(node->data == 1)
-					Game_Bullet_Generation();
-			}else{
-				
-			}
-		}
-		//Uart_Printf("Key task blocked!!\n");
-		if(current_tcb->state !=TASK_STATE_BLOCKED)
-			OS_Set_Task_Block(current_tcb, 100);
-	}
-}
-
 void Main(void)
 {
 	Uart_Printf("M3-Mini RTOS\n");
@@ -188,12 +143,12 @@ void Main(void)
 	Game_Init();
 
 	OS_Create_Task_Simple(Task_Idle, (void*)0, 4, 128, sizeof(Node), 1); // Move Plane 
+
 	OS_Create_Task_Simple(Task_2_1, (void*)0, 3, 1024, sizeof(Node), 10); // Move Plane 
+
 	OS_Create_Task_Simple(Task_2_2, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
 	OS_Create_Task_Simple(Task_2_3, (void*)0, 3, 1024, sizeof(Node), 10); // Move Missile
-	OS_Create_Task_Simple(Task_4_1, (void*)0, 3, 1024, sizeof(Node), 5); // Game Reset&Start
 	OS_Create_Task_Simple(Task_4_2, (void*)0, 3, 1024, sizeof(Node), 5); // LCD Print
-	OS_Create_Task_Simple(Bullet_Task, (void*)0, 3, 1024, sizeof(Node), 5);
 
 
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)

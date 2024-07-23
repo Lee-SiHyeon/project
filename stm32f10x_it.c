@@ -313,7 +313,7 @@ void EXTI3_IRQHandler(void)
 
 	static Signal_st key_input_data;
 	if(key_value==1) key_input_data.data = 1; //joy stick: left
-	key_input_data.tcb_idx = 0; //
+	key_input_data.tcb_idx = 1; //
 
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
@@ -499,7 +499,7 @@ void EXTI9_5_IRQHandler(void)
 
 	static Signal_st key_input_data;
 	if(key_value) key_input_data.data = key_value; //joy stick: 2-right, 3-down, 4-up
-	key_input_data.tcb_idx = 0; //
+	key_input_data.tcb_idx = 1; //
 
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
@@ -684,7 +684,7 @@ void USART1_IRQHandler(void)
 	uart_rx_data = USART1->DR;
 	// Uart_Printf("echo =%c\n",uart_rx_data);
 	uart_data.data = uart_rx_data;
-	uart_data.tcb_idx=3;
+	uart_data.tcb_idx = 1;
 	Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
 	NVIC_ClearPendingIRQ(USART1_IRQn);
 }
@@ -733,14 +733,14 @@ void EXTI15_10_IRQHandler(void)
 	static Signal_st key_input_data;
 	if(key_value==5) // sw 0
 	{
-		key_input_data.data = 321; //reset key
-		key_input_data.tcb_idx = 3; // Game Reset&Start Task
+		key_input_data.data = 5; //reset key
+		key_input_data.tcb_idx = 1; // Game Reset&Start Task
 
 	}
 	else if(key_value == 6) // sw 1
 	{
-		key_input_data.data = 1; 
-		key_input_data.tcb_idx = 5; // Bullet_Task
+		key_input_data.data = 6; 
+		key_input_data.tcb_idx = 1; // Bullet_Task
 	}
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
