@@ -15,7 +15,8 @@ extern int game_state_flag;
 extern int plane_move_flag;
 extern int level_delay[3];
 extern int game_level;
-
+extern Mutex mutexs[MAX_MUTEX];
+volatile int no_mutex;
 /*
 sw0: EXTI15_10_IRQHandler (kv: 1 key_value: 5)
 
@@ -39,6 +40,11 @@ key1: EXTI9_5_IRQHandler (kv: 4 key_value: 4)
 */
 extern unsigned int sys_cnt;
 
+void Task_Idle(void*para){
+	for(;;){
+
+	}
+}
 void Task_2_1(void *para) //Move Plane
 {
 	volatile int i;
@@ -189,14 +195,13 @@ void Main(void)
 	OS_Init();	// OS Initialize
 	Game_Init();
 
-	// game_state_flag = 0;
-
-	OS_Create_Task_Simple(Task_2_1, (void*)0, 5, 1024, sizeof(int), 10); // Move Plane 
-	OS_Create_Task_Simple(Task_2_2, (void*)0, 5, 1024, sizeof(int), 10); // Generate Missile //erase
-	OS_Create_Task_Simple(Task_2_3, (void*)0, 5, 1024, sizeof(int), 10); // Move Missile
-	OS_Create_Task_Simple(Task_4_1, (void*)0, 5, 1024, sizeof(int), 5); // Game Reset&Start
-	OS_Create_Task_Simple(Task_4_2, (void*)0, 3, 1024, sizeof(int), 5); // LCD Print
-	OS_Create_Task_Simple(Bullet_Task, (void*)0, 5, 1024, sizeof(int), 5);
+	OS_Create_Task_Simple(Task_Idle, (void*)0, 4, 128, sizeof(Node), 1); // Move Plane 
+	OS_Create_Task_Simple(Task_2_1, (void*)0, 3, 1024, sizeof(Node), 10); // Move Plane 
+	OS_Create_Task_Simple(Task_2_2, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
+	OS_Create_Task_Simple(Task_2_3, (void*)0, 3, 1024, sizeof(Node), 10); // Move Missile
+	OS_Create_Task_Simple(Task_4_1, (void*)0, 3, 1024, sizeof(Node), 5); // Game Reset&Start
+	OS_Create_Task_Simple(Task_4_2, (void*)0, 3, 1024, sizeof(Node), 5); // LCD Print
+	OS_Create_Task_Simple(Bullet_Task, (void*)0, 3, 1024, sizeof(Node), 5);
 
 
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)

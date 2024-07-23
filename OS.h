@@ -4,14 +4,15 @@
 #include "queue.h"
 /* [Constant] */
 #define MAX_TCB					(20)
-#define MAX_PRIORITY 			(10)
+#define MAX_PRIORITY 			(5)
 #define MAX_TASKS 				(100)
+#define MAX_MUTEX 				(5)
 #define BLOCK_LIST_SIZE			(5)
 #define SYSTICK					(1)
 #define SYS_CNT_MAX				(UINT32_MAX / SYSTICK)
 
 #define PRIO_HIGHEST			(0)
-#define PRIO_LOWEST				(10)
+#define PRIO_LOWEST				(MAX_PRIORITY)
 #define NUM_PRIO				(PRIO_LOWEST - PRIO_HIGHEST + 1)
 
 #define OS_SUCCESS				(0)
@@ -20,9 +21,11 @@
 #define OS_FAIL_ALLOCATE_QUEUE  (-3)
 
 #define STACK_SIZE				(8 * 1024)
-#define QUEUE_SIZE				(2 * 1024)
+#define QUEUE_SIZE				(4 * 1024)
 
 #define INIT_PSR				(0x01000000)
+
+#define FEATURE_PRIORITY_INHERITANCE
 
 typedef enum {
 	TASK_STATE_NONE =0,
@@ -32,6 +35,10 @@ typedef enum {
 	TASK_STATE_MAX,
 }Task_State;
 
+typedef enum {
+	NONE = 0,
+	Printf,
+}Blocked_Reason;
 
 /* [ Type ] */
 typedef struct _signal{
@@ -41,14 +48,20 @@ typedef struct _signal{
 typedef struct _tcb{
 	unsigned long* top_of_stack;		
 	int no_task;					
-	int prio;						
+	int prio;
+	int original_prio;		
 	int state;						
 	unsigned int wakeup_target_time;
-	unsigned int systick_cnt_at_blocked; // for debug
 	struct _tcb* next;
 	Queue* task_message_q;
-	char event_wait_flag;
+	int blocked_mutex_id;
+	unsigned int mutex_time;
 }TCB;
+
+typedef struct {
+    int owner;
+    int used;
+} Mutex;
 
 /* [ Macro ] */
 
@@ -61,4 +74,7 @@ extern void OS_Scheduler_Start(void);
 void OS_Set_Task_Block(TCB* task, unsigned int block_time);
 TCB* _OS_Get_NextTask();
 void _OS_Init_Scheduler();
+int OS_Mutex_Lock(TCB* tcb, int idx);
+void OS_Mutex_Unlock(TCB* tcb, int idx);
+void Remove_Task_From_Ready_Queue(Queue* queue, int task_id);
 #endif
