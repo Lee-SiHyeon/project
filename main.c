@@ -114,7 +114,7 @@ void Task_2_1(void *para) //Move Plane
 		}
 		//Uart_Printf("Key task blocked!!\n");
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
-			OS_Set_Task_Block(current_tcb, 500);
+			OS_Set_Task_Block(current_tcb, 100);
 	}
 }
 void Task_2_2(void *para) //Generate Missile
@@ -135,7 +135,7 @@ void Task_2_3(void *para) //Move Missile
 		if(game_state_flag != 1) continue;
 		Game_Missile_Move();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
-			OS_Set_Task_Block(current_tcb, level_delay[game_level]);
+			OS_Set_Task_Block(current_tcb, 1000);
 	}
 	
 }
@@ -167,7 +167,7 @@ void Task_4_1(void *para) //Game Reset&Start
 			}
 		}
 		//Uart_Printf("Key task blocked!!\n");
-		OS_Set_Task_Block(current_tcb, 500);
+		OS_Set_Task_Block(current_tcb, 100);
 	}
 	
 }

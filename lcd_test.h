@@ -11,11 +11,18 @@
 typedef struct {
     int x, y;
     int width, height;
-    const int * image;
+    const int **image;
 } GameObject;
 
+typedef struct {
+    int x, y;
+    int width, height;
+    int isDrawing; //0: clear, 1: draw
+    int **image;
+} DrawingObject;
+
 extern void Generate_Missile(GameObject *missile);
-extern void Draw_Image(int x, int y, int w, int h, const int *image);
+extern void Draw_Image(GameObject *obj, int size);
 extern void Clear_Image(int x, int y, int w, int h, unsigned short Color);
 extern void DrawPlane(void);
 extern void ClearPlane(void);
