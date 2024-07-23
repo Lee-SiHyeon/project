@@ -51,28 +51,13 @@ void Task_2_1(void *para) //Move Plane
 	Node* node;
 	unsigned int timeout;
 	for(;;){
-		if(game_state_flag != GAME_PLAYING) continue;
-		timeout = sys_cnt;
-		while(!Is_Queue_Empty(current_tcb->task_message_q)){
-			node = Dequeue(current_tcb->task_message_q);
+	    Uart_Printf("Task2_1\n");
 
-			//task_message_q의 data 값이 **일 경우 동작
+		if(game_state_flag != GAME_PLAYING) continue;
+		while(!Is_Queue_Empty(current_tcb->task_message_q)){	
+			node = Dequeue(current_tcb->task_message_q);
 			if(node->data>=1 && node->data<=4)
 				Game_Plane_Move(node->data);
-			
-			timeout = sys_cnt + 1000;
-		}
-		while(timeout>sys_cnt){
-			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
-			if(!Is_Queue_Empty(current_tcb->task_message_q)){
-				node = Dequeue(current_tcb->task_message_q);
-				timeout = sys_cnt+1000;
-				//task_message_q의 data 값이 **일 경우 동작
-				if(node->data>=1 && node->data<=4)
-					Game_Plane_Move(node->data);
-			}else{
-				
-			}
 		}
 		//Uart_Printf("Key task blocked!!\n");
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -81,8 +66,10 @@ void Task_2_1(void *para) //Move Plane
 }
 void Task_2_2(void *para) //Generate Missile
 {
+	
 	volatile int i =0;
 	for(;;){
+   		Uart_Printf("Task2_2\n");
 		if(game_state_flag != 1) continue;
 		Game_Missile_Generation();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -94,6 +81,7 @@ void Task_2_3(void *para) //Move Missile
 {
 	for(;;)
 	{
+   		Uart_Printf("Task2_3\n");
 		if(game_state_flag != 1) continue;
 		Game_Missile_Move();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -110,6 +98,8 @@ void Task_4_1(void *para) //Game Reset&Start
 
 	for(;;)
 	{
+   		Uart_Printf("Task4_1\n");
+		
 		timeout = sys_cnt;
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){
 			node = Dequeue(current_tcb->task_message_q);
@@ -138,9 +128,11 @@ void Task_4_2(void *para) //LCD Print
 {
 	volatile int i =0;
 	for(;;){
+   		Uart_Printf("Task4_2\n");
+
 		Draw_LCD();
-		// if(current_tcb->state !=TASK_STATE_BLOCKED)
-		// 	OS_Set_Task_Block(current_tcb, 100);
+		if(current_tcb->state !=TASK_STATE_BLOCKED)
+			OS_Set_Task_Block(current_tcb, 100);
 	}
 	
 }

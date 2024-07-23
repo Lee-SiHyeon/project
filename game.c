@@ -150,6 +150,7 @@ void Game_Bullet_Generation(void)
 
 void Game_Plane_Move(int dir)
 {
+    Uart_Printf("Dir %d", dir);
     int dx = 10;
 	int dy = 10;
 
