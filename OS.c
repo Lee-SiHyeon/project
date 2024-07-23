@@ -4,7 +4,7 @@
 
 // 참고 : 최초 제공된 코드는 완전한 코드가 아님
 //      그러므로 추후 RTOS 설계에 따라 보완이 필요함
-
+int uart_Mutex;
 
 /* Global Variable */
 TCB tcb[MAX_TCB];
@@ -103,7 +103,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	if( q_element_max !=0 && q_element_size !=0 ){
 		ptcb->task_message_q = (Queue*)_OS_Get_Queue(q_element_size, q_element_max);
 	}else{
-		Uart_Printf(ptcb, "invalid param, q_element_max = %d, q_element_size = %d\n",\
+		// Uart_Printf(ptcb, "invalid param, q_element_max = %d, q_element_size = %d\n",\
 		q_element_max, q_element_size);
 		ptcb->task_message_q = (Queue*) 0;
 	}
@@ -152,6 +152,7 @@ void OS_Scheduler_Start(void)
 		NVIC_SetPriority(i, 0xe);
 	}
 	SysTick_OS_Tick(SYSTICK);
+	uart_Mutex = OS_Create_Mutex();
 	_OS_Start_First_Task();
 }
 
@@ -221,7 +222,25 @@ void _OS_Scheduler_Handle_Signaling_Flag(void){
 	}
 	return;
 }
+char mutex_wakeup_flag=0;
+void _OS_Scheduler_Mutex_wakeup(void){
+	int i;
+	if (mutex_wakeup_flag ==0) return;
+	
+	for(i = 0; i< MAX_TCB; i++) {
+		if ((tcb[i].state==TASK_STATE_BLOCKED) && \
+			(tcb[i].blocked_mutex_id == 0))
+		{
+			tcb[i].state = TASK_STATE_READY;
+			tcb[i].blocked_mutex_id = -1;
+			Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
+		}
+	}
+	mutexs[0].owner = -1;
+	mutex_wakeup_flag =0;
+}
 void _OS_Scheduler_Before_Context_CB(TCB* task){
+	_OS_Scheduler_Mutex_wakeup();
 	_OS_Scheduler_Handle_Signaling_Flag();
 	_OS_Scheduler_Restore_Expired_TCB();
 	switch (task->state){
@@ -281,7 +300,6 @@ int OS_Create_Mutex(void) {
 			mutexs[i].used = 1;
 			mutexs[i].owner = -1;
             __enable_irq();
-			Uart_Printf(current_tcb, "OS_Create_Mutex %d", i);
             return i;
         }
     }
@@ -290,6 +308,7 @@ int OS_Create_Mutex(void) {
 }
 
 int OS_Mutex_Lock(int idx) {
+	// Uart1_Send_String("Lock\n");
 	if(mutex_is_ready == 0)
 		return 1;
     __disable_irq();
@@ -314,26 +333,16 @@ int OS_Mutex_Lock(int idx) {
 }
 
 void OS_Mutex_Unlock(int idx) {
+	// Uart1_Send_String("unLock\n");
 	if(mutex_is_ready == 0)
 		return;
     __disable_irq();
     if ( mutexs[idx].owner == current_tcb->no_task) {
 		tcb[mutexs[idx].owner].prio = tcb[mutexs[idx].owner].original_prio;
-		int i;
-		for(i = 0; i< MAX_TCB; i++) {
-			if ((tcb[i].state==TASK_STATE_BLOCKED) && \
-				(tcb[i].blocked_mutex_id == idx))
-			{
-				Uart_Printf(current_tcb, "Unlock %d %d \n", idx, i);
-				tcb[i].state = TASK_STATE_READY;
-				tcb[i].blocked_mutex_id = -1;
-				tcb[i].wakeup_target_time = 0;
-				Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
-			}
-		}
-		mutexs[idx].owner = -1;
+		mutex_wakeup_flag=1;
     }
     __enable_irq();
+	return;
 }
 
 
@@ -343,7 +352,6 @@ void Remove_Task_From_Ready_Queue(Queue* queue, int task_id) {
 
     while (current != 0) {
         if (current->data == &tcb[task_id]) {
-			Uart_Printf(current_tcb, "Remove_Task_From_Ready_Queue %d \n", task_id);
             if (previous == 0) {
                 queue->front = current->next;
                 if (queue->front == 0) {

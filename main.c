@@ -15,66 +15,84 @@ extern Mutex mutexs[MAX_MUTEX];
 volatile int no_mutex;
 
 void Task0(void *para){
-	volatile int i, j;
-	OS_Set_Task_Block(current_tcb, 500);
-
-	Uart_Printf(current_tcb, "Task0 : Semaphore Take!\n");
-
-	OS_Mutex_Lock(no_mutex);
-	Uart_Printf(current_tcb, "Task0 : %d %d!\n", mutexs[no_mutex].owner, mutexs[no_mutex].used);
-
-
-	for(j=0;j<20;j++){
-		for(i=0;i<0x100000;i++);
-		LED_1_Toggle();
-	}
-
-	OS_Mutex_Unlock(no_mutex);
-
-	Uart_Printf(current_tcb, "Task0 : Semaphore Give!\n");
 	for(;;)
 	{
-		OS_Set_Task_Block(current_tcb, 500);
+		Uart_Printf(current_tcb, "Task0 : Semaphore Take! Semaphore Take!Semaphore Take! Semaphore Take!\n");
+		// OS_Set_Task_Block(current_tcb, 1);
 	}
 }
-
-void Task1(void *para)
-{
-	volatile int i;
-
-	OS_Set_Task_Block(current_tcb, 1100);
-	Uart_Printf(current_tcb, "Task1 : Run!\n");
-
+void Task1(void *para){
 	for(;;)
 	{
-		for(i=0;i<0x100000;i++);
-		Uart_Printf(current_tcb, ".");
+		Uart_Printf(current_tcb, "Task1 : 0123456789 0123456789 0123456789 0123456789!\n");
+		// OS_Set_Task_Block(current_tcb, 1);
 	}
 }
-
-void Task2(void *para)
-{
-	volatile int i,  j;
-	no_mutex = OS_Create_Mutex();
-
-	Uart_Printf(current_tcb, "Task2 : Semaphore Take!\n");
-	OS_Mutex_Lock(no_mutex);
-
-	Uart_Printf(current_tcb, "Task2 : %d %d!\n", mutexs[no_mutex].owner, mutexs[no_mutex].used);
-	for(j=0; j<20; j++){
-		for(i=0; i<0x100000; i++);
-		LED_0_Toggle();
-	}
-
-	OS_Mutex_Unlock(no_mutex);
-	Uart_Printf(current_tcb, "Task2 : Semaphore Give\n");
-
+void Task2(void *para){
 	for(;;)
 	{
-		OS_Set_Task_Block(current_tcb, 1000);
-		Uart_Printf(current_tcb, ".\n");
+		Uart_Printf(current_tcb, "Task2 : abcdefg abcdefg abcdefg abcdefg abcdefg\n");
+		// OS_Set_Task_Block(current_tcb, 1);
 	}
 }
+// void Task0(void *para){
+// 	volatile int i, j;
+// 	OS_Set_Task_Block(current_tcb, 500);
+
+// 	Uart_Printf(current_tcb, "Task0 : Semaphore Take!\n");
+
+// 	OS_Mutex_Lock(no_mutex);
+
+// 	for(j=0;j<20;j++){
+// 		for(i=0;i<0x100000;i++);
+// 		LED_1_Toggle();
+// 	}
+
+// 	OS_Mutex_Unlock(no_mutex);
+
+// 	Uart_Printf(current_tcb, "Task0 : Semaphore Give!\n");
+// 	for(;;)
+// 	{
+// 		OS_Set_Task_Block(current_tcb, 500);
+// 	}
+// }
+
+// void Task1(void *para)
+// {
+// 	volatile int i;
+
+// 	OS_Set_Task_Block(current_tcb, 1100);
+// 	Uart_Printf(current_tcb, "Task1 : Run!\n");
+
+// 	for(;;)
+// 	{
+// 		for(i=0;i<0x100000;i++);
+// 		Uart_Printf(current_tcb, ".");
+// 	}
+// }
+
+// void Task2(void *para)
+// {
+// 	volatile int i,  j;
+// 	no_mutex = OS_Create_Mutex();
+
+// 	Uart_Printf(current_tcb, "Task2 : Semaphore Take!\n");
+// 	OS_Mutex_Lock(no_mutex);
+
+// 	for(j=0; j<20; j++){
+// 		for(i=0; i<0x100000; i++);
+// 		LED_0_Toggle();
+// 	}
+
+// 	OS_Mutex_Unlock(no_mutex);
+// 	Uart_Printf(current_tcb, "Task2 : Semaphore Give\n");
+
+// 	for(;;)
+// 	{
+// 		OS_Set_Task_Block(current_tcb, 1000);
+// 		Uart_Printf(current_tcb, ".\n");
+// 	}
+// }
 
 /*
 sw0: EXTI15_10_IRQHandler (kv: 1 key_value: 5)
@@ -133,12 +151,12 @@ void Key_Receive_Task(void *para)
 
 void Main(void)
 {
-	Uart_Printf(current_tcb, "M3-Mini RTOS\n");
+	// Uart_Printf(current_tcb, "M3-Mini RTOS\n");
 	OS_Init();
 	
 	OS_Create_Task_Simple(Task0, (void*)0, 1, 2048,4,10);
-	OS_Create_Task_Simple(Task1, (void*)0, 2, 2048,4,10);
-	OS_Create_Task_Simple(Task2, (void*)0, 3, 2048,4,10); 
+	OS_Create_Task_Simple(Task1, (void*)0, 1, 2048,4,10);
+	OS_Create_Task_Simple(Task2, (void*)0, 1, 2048,4,10); 
 	// OS_Create_Task_Simple(Key_Receive_Task, (void*)0, 1, 2048,sizeof(int), 10); 
 	
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)
