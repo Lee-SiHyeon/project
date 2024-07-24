@@ -7,14 +7,17 @@
 #define PLANE_W 			28
 #define PLANE_H 			24
 #define PLANE_SIZE			208
+#define PLANE_COLOR			0x55D
 
 #define MISSILE_W			8
 #define MISSILE_H			8
 #define MISSILE_SIZE		20
+#define MISSILE_COLOR		0xFBE4
 
 #define BULLET_W			8
 #define BULLET_H			8
 #define BULLET_SIZE	    	20
+#define BULLET_COLOR        0xFFFF
 
 #define DIGIT_WIDTH         10
 #define DIGIT_HEIGHT        14
