@@ -18,3 +18,5 @@ extern void Lcd_Clr_Screen(void);
 extern void Lcd_Draw_Back_Color(unsigned short color);
 extern void Lcd_Write_Data_16Bit(unsigned short color);
 extern void Lcd_Draw_Box(int xs, int ys, int w, int h, unsigned short Color);
+extern void LCD_Show_Char(u16 x, u16 y, u16 fc,  u16 bc,  u8 num, u8 size, u8 mode);
+extern void LCD_Show_String(u16 x, u16 y, u16 fc,  u16 bc, u8 size, u8 *p, u8 mode);

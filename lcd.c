@@ -1,6 +1,6 @@
 #include "device_driver.h"
 #include "lcd.h"
-
+#include "font.h"
 #define Lcd_W 			240
 #define Lcd_H 			320
 
@@ -406,3 +406,51 @@ void Lcd_Put_Pixel(unsigned short x, unsigned short y, unsigned short color)
 	Lcd_Write_Data_16Bit(color);
 }
 
+void LCD_Show_Char_Scaled(u16 x, u16 y, u16 fc, u16 bc, u8 num, u8 size, u8 mode, u8 scale) {
+    u8 temp;
+    u8 pos, t, i, j;
+    num = num - ' ';
+    Lcd_Set_Windows(x - size * scale + 1, y, x, y + (size / 2) * scale - 1);
+
+    if (!mode) {
+        for (pos = 0; pos < size; pos++) {
+            // if (size == 12) temp = asc2_1206[num][pos];
+            // else 
+			temp = asc2_1608[num][pos];
+            for (t = 0; t < size / 2; t++) {
+                for (i = 0; i < scale; i++) {
+                    for (j = 0; j < scale; j++) {
+                        if (temp & 0x01) Lcd_Write_Data_16Bit(fc);
+                        else Lcd_Write_Data_16Bit(bc);
+                    }
+                }
+                temp >>= 1;
+            }
+        }
+    } else {
+        for (pos = 0; pos < size; pos++) {
+            // if (size == 12) temp = asc2_1206[num][pos];
+            // else 
+			temp = asc2_1608[num][pos];
+            for (t = 0; t < size / 2; t++) {
+                for (i = 0; i < scale; i++) {
+                    for (j = 0; j < scale; j++) {
+                        if (temp & 0x01) Lcd_Put_Pixel(x - pos * scale - i, y + t * scale + j, fc);
+                    }
+                }
+                temp >>= 1;
+            }
+        }
+    }
+    Lcd_Set_Windows(0, 0, lcddev.width - 1, lcddev.height - 1);
+}
+
+void LCD_Show_String_Scaled(u16 x, u16 y, u16 fc, u16 bc, u8 size, u8 *p, u8 mode, u8 scale) {
+    while ((*p <= '~') && (*p >= ' ')) {
+        if (x > (lcddev.width - 1) || y > (lcddev.height - 1))
+            return;
+        LCD_Show_Char_Scaled(x, y, fc, bc, *p, size, mode, scale);
+        y += size * scale;
+        p++;
+    }
+}

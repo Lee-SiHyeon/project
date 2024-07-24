@@ -86,7 +86,28 @@ void Draw_Image(GameObject *obj) {
         }
     }
 }
+void Draw_BorderLine(unsigned short color){
+    Lcd_Draw_Box(0, 0, Lcd_W, 5, color);
+    Lcd_Draw_Box(0, Lcd_H-5, Lcd_W, 5, color);
  
+    Lcd_Draw_Box(0, 5, 5, Lcd_H-10, color);
+    Lcd_Draw_Box(Lcd_W-5, 5, 5, Lcd_H-10, color);
+}
+
+void Draw_Start_Text() {
+    int startX = 210;
+    int startY = 13;
+    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, "PYONG", 1, 3);
+    LCD_Show_String_Scaled(startX - 50, startY, WHITE, BLACK , 16, "PYONG", 1, 3);
+}
+
+void Draw_Game_Over_Text() {
+    int startX = 210;
+    int startY = 33;
+    LCD_Show_String_Scaled(startX, startY, RED, BLACK , 16, "GAME", 1, 3);
+    LCD_Show_String_Scaled(startX - 50, startY, RED, BLACK , 16, "OVER", 1, 3);
+}
+
 void Clear_Image(GameObject *obj) {
     Lcd_Draw_Box(obj->prev_x, obj->prev_y, obj->width, obj->height, BLACK);
 }
@@ -268,8 +289,12 @@ void Draw_LCD(void)
     volatile int i, j;
 
 	if(game_state_flag == GAME_START){
-		Draw_BorderLine(BLUE);
         Game_BGM_Sound();
+        Draw_BorderLine(BLUE);
+		Draw_Start_Text();
+        _Delay(300);
+        Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
+		_Delay(300);
 	}
 
 	else if(game_state_flag==GAME_PLAYING){
@@ -284,10 +309,7 @@ void Draw_LCD(void)
                 if(Check_Collision(&plane, &missile[i]))
                 {
                     game_state_flag = GAME_OVER;
-                    Game_Over_Sound();
-                	//Uart_Printf("plane and missile Collision \n");
-                    Lcd_Clr_Screen();
-
+            		Lcd_Clr_Screen();
                     return;
                 }
                     
@@ -353,16 +375,13 @@ void Draw_LCD(void)
 	}
 
 	else if(game_state_flag==GAME_OVER){
-		Draw_BorderLine(RED);
+        Game_Over_Sound();
+        Draw_BorderLine(RED);
+        Draw_Game_Over_Text();
+		_Delay(300);
+        Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
+		_Delay(300);
 	}
-}
-
-void Draw_BorderLine(unsigned short color){
-    Lcd_Draw_Box(0, 0, Lcd_W, 5, color);
-    Lcd_Draw_Box(0, Lcd_H-5, Lcd_W, 5, color);
-
-    Lcd_Draw_Box(0, 5, 5, Lcd_H-10, color);
-    Lcd_Draw_Box(Lcd_W-5, 5, 5, Lcd_H-10, color);
 }
 
 void Game_BGM_Sound(void){
