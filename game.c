@@ -308,8 +308,9 @@ void Draw_LCD(void)
                     missile[i].prev_x = missile[i].x;
                     missile[i].prev_y = missile[i].y;
                     Clear_Image(&missile[i]);
-                    bullet[i].prev_x = bullet[i].x;
-                    bullet[i].prev_y = bullet[i].y;
+                    
+                    bullet[j].prev_x = bullet[j].x;
+                    bullet[j].prev_y = bullet[j].y;
                     Clear_Image(&bullet[j]);
 
                     missile[i].x = 0;
