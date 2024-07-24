@@ -244,8 +244,8 @@ void _OS_Scheduler_Handle_Signaling_Flag(void){
 		node = Dequeue(signaling_Queue);
 		tcb_idx = ((Signal_st*)node->data)->tcb_idx;
 		data = ((Signal_st*)node->data)->data;
-
-		Enqueue (tcb[tcb_idx].task_message_q, data,INT);
+		if(data != -1)
+			Enqueue (tcb[tcb_idx].task_message_q, data,INT);
 		switch(tcb[tcb_idx].state){
 			case TASK_STATE_BLOCKED:
 				tcb[tcb_idx].state = TASK_STATE_READY;

@@ -17,6 +17,8 @@ extern int level_delay[3];
 extern int game_level;
 extern Mutex mutexs[MAX_MUTEX];
 volatile int no_mutex;
+Signal_st wake_task_lcd;
+
 /*
 sw0: EXTI15_10_IRQHandler (kv: 1 key_value: 5)
 
@@ -51,10 +53,10 @@ void Task_Key_Handle(void *para) //Move Plane
 	Node* node;
 	int key_value;
 	unsigned int timeout;
-	for(;;){
-	    // Uart_Printf("Task2_1\n");
 
-		if(game_state_flag != GAME_PLAYING) continue;
+	for(;;){
+   		Uart_Printf("Task_Key_Handle\n");
+
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){	
 			node = Dequeue(current_tcb->task_message_q);
 			key_value = (int)node->data;
@@ -70,11 +72,16 @@ void Task_Key_Handle(void *para) //Move Plane
 					break;
 				case KEY_GAME_RESET:
 					Game_Init();
+					game_state_flag = GAME_PLAYING;
 					break;
 				default:
 					break;
 			}
-
+			
+			wake_task_lcd.data = -1;
+			wake_task_lcd.tcb_idx = 2;
+			Enqueue(signaling_Queue,(void*)&wake_task_lcd,STRUCT_SIGNAL);
+			
 			timeout = sys_cnt + 1000;
 		}
 		while(timeout>sys_cnt){
@@ -83,54 +90,58 @@ void Task_Key_Handle(void *para) //Move Plane
 				node = Dequeue(current_tcb->task_message_q);
 				timeout = sys_cnt+1000;
 				//task_message_q의 data 값이 **일 경우 동작
-				if(node->data>=1 && node->data<=4)
-					Game_Plane_Move(node->data);
-				else if(node->data == 5) 
-					Game_Bullet_Generation();
-				else if(node->data == 6)
-					Game_Init();
+				switch(key_value){
+					case KEY_PLANE_FORWARD:
+					case KEY_PLANE_BACK:
+					case KEY_PLANE_LEFT:
+					case KEY_PLANE_RIGHT:
+						Game_Plane_Move(node->data);
+						break;
+					case KEY_PLANE_BULLET:
+						Game_Bullet_Generation();
+						break;
+					case KEY_GAME_RESET:
+						Game_Init();
+						game_state_flag = GAME_PLAYING;
+						break;
+					default:
+						break;
+				}
+
+				wake_task_lcd.data = -1;
+				wake_task_lcd.tcb_idx = 2;
+				Enqueue(signaling_Queue,(void*)&wake_task_lcd,STRUCT_SIGNAL);
+				
 			}else{
 				
 			}
 		}
-		//Uart_Printf("Key task blocked!!\n");
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
 			OS_Set_Task_Block(current_tcb, 100);
 	}
 }
-void Task_2_2(void *para) //Generate Missile
+
+void Task_Generate_Missile(void *para) //Generate Missile
 {
 	
 	volatile int i =0;
 	for(;;){
-   		// Uart_Printf("Task2_2\n");
-		if(game_state_flag != 1) continue;
+		if(game_state_flag != GAME_PLAYING) continue;
 		Game_Missile_Generation();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
 			OS_Set_Task_Block(current_tcb, 5000);
 	}
 	
 }
-void Task_2_3(void *para) //Move Missile
-{
-	for(;;)
-	{
-   		// Uart_Printf("Task2_3\n");
-		if(game_state_flag != 1) continue;
-		Game_Missile_Move();
-		if(current_tcb->state !=TASK_STATE_BLOCKED)
-			OS_Set_Task_Block(current_tcb, 1000);
-	}
-	
-}
 
-void Task_4_2(void *para) //LCD Print
+void Task_Draw_LCD(void *para)
 {
 	volatile int i =0;
+	unsigned int timeout;
 	for(;;){
-   		// Uart_Printf("Task4_2\n");
-
+		Uart_Printf("Task_Draw_LCD\n");
 		Draw_LCD();
+
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
 			OS_Set_Task_Block(current_tcb, 100);
 	}
@@ -156,11 +167,9 @@ void Main(void)
 
 	OS_Create_Task_Simple(Task_Idle, (void*)0, 4, 128, sizeof(Node), 1); // Move Plane 
 
-	OS_Create_Task_Simple(Task_Key_Handle, (void*)0, 3, 1024, sizeof(Node), 10); // Move Plane 
-
-	OS_Create_Task_Simple(Task_2_2, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
-	OS_Create_Task_Simple(Task_2_3, (void*)0, 3, 1024, sizeof(Node), 10); // Move Missile
-	OS_Create_Task_Simple(Task_4_2, (void*)0, 3, 1024, sizeof(Node), 5); // LCD Print
+	OS_Create_Task_Simple(Task_Key_Handle, (void*)0,0, 1024, sizeof(Node), 10); // Move Plane
+	OS_Create_Task_Simple(Task_Draw_LCD, (void*)0, 3, 1024, sizeof(Node), 5); // LCD Print
+	OS_Create_Task_Simple(Task_Generate_Missile, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
 
 
 	OS_Scheduler_Start();	// Scheduler Start (������ ù��° Task�� ���ุ �ϰ� ����)

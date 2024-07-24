@@ -60,6 +60,9 @@ void Game_Init(void);
 void Game_Missile_Generation(void);
 void Game_Bullet_Generation(void);
 
+void Game_Missile_Clear(void);
+void Game_Bullet_Clear(void);
+
 void Game_Plane_Move(int dir);
 void Game_Missile_Move(void);
 void Game_Bullet_Move(void);
