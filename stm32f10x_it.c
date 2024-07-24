@@ -26,6 +26,7 @@
 #include "device_driver.h"
 #include "OS.h"
 #include "queue.h"
+#include "game.h"
 
 extern Queue* signaling_Queue;
 
@@ -682,10 +683,32 @@ void USART1_IRQHandler(void)
 {
 	static Signal_st uart_data;
 	uart_rx_data = USART1->DR;
-	// Uart_Printf("echo =%c\n",uart_rx_data);
-	uart_data.data = uart_rx_data;
-	uart_data.tcb_idx = 1;
-	Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);
+	switch (uart_rx_data){
+		case 'w':
+			uart_data.data = KEY_PLANE_FORWARD;
+			break;
+		case 's':
+			uart_data.data = KEY_PLANE_BACK;
+			break;
+		case 'a':
+			uart_data.data = KEY_PLANE_LEFT;
+			break;
+		case 'd':
+			uart_data.data = KEY_PLANE_RIGHT;
+			break;
+		case 'k':
+			uart_data.data = KEY_PLANE_BULLET;
+			break;
+		case 'r':
+			uart_data.data = KEY_GAME_RESET;
+			break;
+		default:
+			break;
+	}
+	if (KEY_MINIMUM <uart_data.data && uart_data.data <KEY_MAX_VALUE ){
+		uart_data.tcb_idx = 1;
+		Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);	
+	} 
 	NVIC_ClearPendingIRQ(USART1_IRQn);
 }
 
