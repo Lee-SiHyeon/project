@@ -36,6 +36,15 @@ typedef enum {
     GAME_OVER = 2
 } GameState;
 
+typedef enum {
+    KEY_PLANE_FORWARD = 1,
+    KEY_PLANE_BACK = 2,
+    KEY_PLANE_LEFT = 3,
+    KEY_PLANE_RIGHT = 4,
+    KEY_PLANE_MISSILE = 5,
+    KEY_GAME_RESET = 6
+} KeyMap;
+
 void _Delay(int ms);
 
 void Draw_Image(GameObject *obj);

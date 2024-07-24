@@ -45,10 +45,11 @@ void Task_Idle(void*para){
 
 	}
 }
-void Task_2_1(void *para) //Move Plane
+void Task_Key_Handle(void *para) //Move Plane
 {
 	volatile int i;
 	Node* node;
+	int key_value;
 	unsigned int timeout;
 	for(;;){
 	    Uart_Printf("Task2_1\n");
@@ -56,12 +57,23 @@ void Task_2_1(void *para) //Move Plane
 		if(game_state_flag != GAME_PLAYING) continue;
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){	
 			node = Dequeue(current_tcb->task_message_q);
-			if(node->data>=1 && node->data<=4)
-				Game_Plane_Move(node->data);
-			else if(node->data == 5)
-				Game_Bullet_Generation();
-			else if(node->data == 6)
-				Game_Init();
+			key_value = (int)node->data;
+			switch(key_value){
+				case KEY_PLANE_FORWARD:
+				case KEY_PLANE_BACK:
+				case KEY_PLANE_LEFT:
+				case KEY_PLANE_RIGHT:
+					Game_Plane_Move(node->data);
+					break;
+				case KEY_PLANE_MISSILE:
+					Game_Bullet_Generation();
+					break;
+				case KEY_GAME_RESET:
+					Game_Init();
+					break;
+				default:
+					break;
+			}
 
 			timeout = sys_cnt + 1000;
 		}
@@ -144,7 +156,7 @@ void Main(void)
 
 	OS_Create_Task_Simple(Task_Idle, (void*)0, 4, 128, sizeof(Node), 1); // Move Plane 
 
-	OS_Create_Task_Simple(Task_2_1, (void*)0, 3, 1024, sizeof(Node), 10); // Move Plane 
+	OS_Create_Task_Simple(Task_Key_Handle, (void*)0, 3, 1024, sizeof(Node), 10); // Move Plane 
 
 	OS_Create_Task_Simple(Task_2_2, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
 	OS_Create_Task_Simple(Task_2_3, (void*)0, 3, 1024, sizeof(Node), 10); // Move Missile
