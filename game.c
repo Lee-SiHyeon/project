@@ -299,11 +299,11 @@ void Draw_LCD(void)
         //  표지 화면 띄우기 ( 유저 SW1 버튼 누르는거 대기)
 			Game_BGM_Sound();
 			Draw_BorderLine(BLUE);
+            Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
+            _Delay(300);
 			Draw_Start_Text();
         	Draw_BorderLine(BLUE);
             _Delay(300);
-        	Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
-			_Delay(300);
             break;
         case GAME_READY_TO_PLAY:
             Game_Init();

@@ -85,6 +85,7 @@ void Task_Key_Handle(void *para) //Move Plane
 					Game_Bullet_Generation();
 					break;
 				case KEY_GAME_RESET:
+					while(Dequeue(current_tcb->task_message_q));
 					Game_SW1_Set_Next_State();
 					break;
 				case 7: // debug
