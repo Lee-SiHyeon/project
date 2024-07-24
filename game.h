@@ -19,7 +19,11 @@
 #define DIGIT_WIDTH         10
 #define DIGIT_HEIGHT        14
 
+#define MAX_MISSILE         7
+#define MISSILE_SPEED       2
+
 #define MAX_BULLET          10
+#define BULLET_SPEED        4
 
 typedef struct {
     int x, y;

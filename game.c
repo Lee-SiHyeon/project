@@ -47,17 +47,11 @@ const int Bullet[BULLET_W*BULLET_H] = {
 
 GameObject plane;
 GameObject bullet[MAX_BULLET];
-GameObject missile[10];
+GameObject missile[MAX_MISSILE];
 
 int score;
-int game_level;
 int game_state_flag;
 int plane_move_flag;
-
-int level_delay[3] = {500, 300, 120};
-int level_px_move[3] = {1, 3, 5};
-int level_score[3] = {10, 30, 50};
-int level_max_missiles[3] = {5, 8, 10};
 
 void _Delay(int ms)
 {
@@ -107,7 +101,6 @@ void Game_Init(void)
 	plane.is_used = 1;
 
 	score = 0;
-	game_level = 0;
 
     if (game_state_flag != GAME_PLAYING)
         game_state_flag = GAME_START;
@@ -123,7 +116,7 @@ void Game_Init(void)
 void Game_Missile_Clear(void)
 {
     volatile int i;
-    for(i = 0; i < 10; i++)
+    for(i = 0; i < MAX_MISSILE; i++)
     {
         missile[i].width = MISSILE_W;
         missile[i].height = MISSILE_H;
@@ -134,7 +127,7 @@ void Game_Missile_Clear(void)
 void Game_Missile_Generation(void)
 {
     int i;
-    for(i = 0; i < level_max_missiles[game_level]; i++)
+    for(i = 0; i < MAX_MISSILE; i++)
     {
         if(missile[i].is_used == 0)
         {
@@ -150,7 +143,7 @@ void Game_Missile_Generation(void)
 void Game_Bullet_Clear(void)
 {
     volatile int i;
-    for(i = 0; i < 10; i++)
+    for(i = 0; i < MAX_BULLET; i++)
     {
         bullet[i].width = BULLET_W;
         bullet[i].height = BULLET_H;
@@ -161,7 +154,7 @@ void Game_Bullet_Clear(void)
 void Game_Bullet_Generation(void)
 {
     volatile int i;
-    for(i = 0; i < 10; i++)
+    for(i = 0; i < MAX_BULLET; i++)
     {
         if(bullet[i].is_used == 0)
         {
@@ -205,8 +198,8 @@ void Game_Plane_Move(int dir)
 void Game_Missile_Move(void)
 {
     int i;
-    int dx = -level_px_move[game_level];
-    for(i = 0; i < level_max_missiles[game_level]; i++)
+    int dx = -MISSILE_SPEED;
+    for(i = 0; i < MAX_MISSILE; i++)
     {
         if (missile[i].is_used == 0)
             continue;
@@ -228,7 +221,7 @@ void Game_Missile_Move(void)
 void Game_Bullet_Move(void)
 {
     int i;
-    int dx = level_px_move[game_level];
+    int dx = BULLET_SPEED;
     for(i = 0; i < MAX_BULLET; i++)
     {
         if(bullet[i].is_used == 0)
@@ -268,7 +261,8 @@ int Check_Collision(GameObject* object1, GameObject* object2) {
 
 void Draw_LCD(void)
 {
-    int index, count, i, j;
+    int index, count;
+    volatile int i, j;
 
 	if(game_state_flag == GAME_START){
 		Lcd_Draw_Back_Color(BLUE);
@@ -279,25 +273,28 @@ void Draw_LCD(void)
 
 	else if(game_state_flag==GAME_PLAYING){
         Game_Missile_Move();
+        Game_Bullet_Move();
 
         // 미사일과 비행기 충돌 여부
-        for(i = 0; i < level_max_missiles[game_level]; i++)
+        for(i = 0; i < MAX_MISSILE; i++)
         {
             if (missile[i].is_used == 1)
             {
                 if(Check_Collision(&plane, &missile[i]))
                 {
                     game_state_flag = GAME_OVER;
+<<<<<<< Updated upstream
                 	//Uart_Printf("plane and missile Collision \n");
+=======
+>>>>>>> Stashed changes
                     return;
                 }
                     
             }
         }
 
-        Game_Bullet_Move();
         // 미사일과 총알 충돌 여부
-        for(i = 0; i < level_max_missiles[game_level]; i++)
+        for(i = 0; i < MAX_MISSILE; i++)
         {
             if(missile[i].is_used == 0)
                 continue;
@@ -307,16 +304,20 @@ void Draw_LCD(void)
                     continue;
                 if (Check_Collision(&missile[i], &bullet[j]))
                 {
+                    missile[i].prev_x = missile[i].x;
+                    missile[i].prev_y = missile[i].y;
                     Clear_Image(&missile[i]);
+                    bullet[i].prev_x = bullet[i].x;
+                    bullet[i].prev_y = bullet[i].y;
                     Clear_Image(&bullet[j]);
 
                     missile[i].x = 0;
                     missile[i].y = 0;
                     missile[i].is_used = 0;
 
-                    bullet[i].x = 0;
-                    bullet[i].y = 0;
-                    bullet[i].is_used = 0;
+                    bullet[j].x = 0;
+                    bullet[j].y = 0;
+                    bullet[j].is_used = 0;
                 }
             }
         }
@@ -329,7 +330,7 @@ void Draw_LCD(void)
 		}
 
         // missile draw
-        for(i = 0; i < level_max_missiles[game_level]; i++)
+        for(i = 0; i < MAX_MISSILE; i++)
         {
             if(missile[i].is_used == 1)
             {
@@ -339,7 +340,7 @@ void Draw_LCD(void)
         }
 
        // bullet draw
-        for(i = 0; i < 10; i++)
+        for(i = 0; i < MAX_BULLET; i++)
         {
             if(bullet[i].is_used == 1)
             {

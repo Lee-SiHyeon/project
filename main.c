@@ -55,7 +55,6 @@ void Task_Key_Handle(void *para) //Move Plane
 	unsigned int timeout;
 
 	for(;;){
-   		Uart_Printf("Task_Key_Handle\n");
 
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){	
 			node = Dequeue(current_tcb->task_message_q);
@@ -82,13 +81,13 @@ void Task_Key_Handle(void *para) //Move Plane
 			wake_task_lcd.tcb_idx = 2;
 			Enqueue(signaling_Queue,(void*)&wake_task_lcd,STRUCT_SIGNAL);
 			
-			timeout = sys_cnt + 1000;
+			timeout = sys_cnt + 10;
 		}
 		while(timeout>sys_cnt){
 			// Uart_Printf("tcb[tcb_idx].task_message_q->element_cnt= %d\n",current_tcb->task_message_q->element_cnt);
 			if(!Is_Queue_Empty(current_tcb->task_message_q)){
 				node = Dequeue(current_tcb->task_message_q);
-				timeout = sys_cnt+1000;
+				timeout = sys_cnt+10;
 				//task_message_q의 data 값이 **일 경우 동작
 				switch(key_value){
 					case KEY_PLANE_FORWARD:
@@ -139,7 +138,6 @@ void Task_Draw_LCD(void *para)
 	volatile int i =0;
 	unsigned int timeout;
 	for(;;){
-		Uart_Printf("Task_Draw_LCD\n");
 		Draw_LCD();
 
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -160,7 +158,6 @@ void Task_Draw_LCD(void *para)
 
 void Main(void)
 {
-	Uart_Printf("M3-Mini RTOS\n");
 	
 	OS_Init();	// OS Initialize
 	Game_Init();
