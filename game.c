@@ -284,12 +284,10 @@ void Draw_LCD(void)
                 if(Check_Collision(&plane, &missile[i]))
                 {
                     game_state_flag = GAME_OVER;
-<<<<<<< HEAD
                     Game_Over_Sound();
                 	//Uart_Printf("plane and missile Collision \n");
                     Lcd_Clr_Screen();
-=======
->>>>>>> 6b9687ff5471112dc8de2ea51ccd8f4686f435c9
+
                     return;
                 }
                     

@@ -71,6 +71,12 @@ int Check_Collision(GameObject* object1, GameObject* object2);
 
 void Draw_LCD(void);
 
-void Play_BGM(void);
+void Draw_BorderLine(unsigned short color);
+
+void Game_BGM_Sound(void);
+void Shoot_Bullet_Sound(void);
+void Game_Over_Sound(void);
+
+void playSound(unsigned short frequency, unsigned short duration);
 
 #endif
