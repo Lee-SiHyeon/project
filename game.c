@@ -1,5 +1,6 @@
 #include "device_driver.h"
 #include "lcd.h"
+#include "buzzer.h"
 #include "game.h"
 
 const unsigned char Plane[168][2] = {
@@ -158,6 +159,8 @@ void Game_Bullet_Generation(void)
     {
         if(bullet[i].is_used == 0)
         {
+            Shoot_Bullet_Sound();
+
             bullet[i].x = plane.x + PLANE_W;
             bullet[i].y = plane.y + PLANE_H/2 - BULLET_H/2;
             bullet[i].prev_x = 0;
@@ -265,10 +268,8 @@ void Draw_LCD(void)
     volatile int i, j;
 
 	if(game_state_flag == GAME_START){
-		Lcd_Draw_Back_Color(BLUE);
-		_Delay(300);
-		Lcd_Clr_Screen();
-		_Delay(300);
+		Draw_BorderLine(BLUE);
+        Game_BGM_Sound();
 	}
 
 	else if(game_state_flag==GAME_PLAYING){
@@ -283,10 +284,9 @@ void Draw_LCD(void)
                 if(Check_Collision(&plane, &missile[i]))
                 {
                     game_state_flag = GAME_OVER;
-<<<<<<< Updated upstream
+                    Game_Over_Sound();
                 	//Uart_Printf("plane and missile Collision \n");
-=======
->>>>>>> Stashed changes
+                    Lcd_Clr_Screen();
                     return;
                 }
                     
@@ -351,9 +351,44 @@ void Draw_LCD(void)
 	}
 
 	else if(game_state_flag==GAME_OVER){
-		Lcd_Draw_Back_Color(RED);
-		_Delay(300);
-		Lcd_Clr_Screen();
-		_Delay(300);
+		Draw_BorderLine(RED);
 	}
+}
+
+void Draw_BorderLine(unsigned short color){
+    Lcd_Draw_Box(0, 0, Lcd_W, 5, color);
+    Lcd_Draw_Box(0, Lcd_H-5, Lcd_W, 5, color);
+
+    Lcd_Draw_Box(0, 5, 5, Lcd_H-10, color);
+    Lcd_Draw_Box(Lcd_W-5, 5, 5, Lcd_H-10, color);
+}
+
+void Game_BGM_Sound(void){
+    playSound(C2, 100);
+    playSound(E2, 100);
+    playSound(G2, 100);
+    playSound(E2, 100);
+    playSound(C2, 100);
+    playSound(D2, 100);
+    playSound(E2, 100);
+    playSound(A2, 100);
+    playSound(G2, 100);
+}
+
+void Shoot_Bullet_Sound(void){
+    playSound(C2, 50);
+}
+
+void Game_Over_Sound(void){
+    playSound(C2, 100);
+    playSound(E2, 100);
+    playSound(G2, 100);
+    playSound(E2, 100);
+    playSound(C2, 100);
+}
+
+void playSound(unsigned short frequency, unsigned short duration) {
+    TIM3_Out_Freq_Generation(frequency);
+    _Delay(duration);
+    TIM3_Out_Stop();
 }

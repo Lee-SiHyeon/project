@@ -26,12 +26,11 @@
 #define BULLET_SPEED        4
 
 typedef struct {
-    int x, y;
-    int prev_x, prev_y;
-    int width, height;
+    unsigned short x, y;
+    unsigned short prev_x, prev_y;
+    unsigned short width, height;
     const int **image;
-    int imageSize;
-    char is_used;
+    unsigned char is_used;
 } GameObject;
 
 typedef enum {

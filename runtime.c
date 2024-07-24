@@ -29,6 +29,8 @@ void System_Init(void)
 	TIM4_Repeat_Interrupt_Enable(1, 5000);
 	Lcd_Init();	// LCD �ʱ�ȭ
 	LED_Init();	// LED �ʱ�ȭ
+	TIM3_Out_Init();
+	
 	SCB->VTOR = 0x08003000;
 	SCB->SHCSR = 7<<16;
 	SCB->AIRCR = 0x05FA0000;
