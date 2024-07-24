@@ -118,7 +118,7 @@ void Game_Missile_Generation(void)
     {
         if(missile[i].is_used == 0)
         {
-            missile[i].x = 320;
+            missile[i].x = (rand() % 40) + 280;
             missile[i].y = rand() % (Lcd_H - 10);
             missile[i].width = MISSILE_W;
             missile[i].height = MISSILE_H;
@@ -150,7 +150,7 @@ void Game_Bullet_Generation(void)
 
 void Game_Plane_Move(int dir)
 {
-    Uart_Printf("Dir %d", dir);
+    // Uart_Printf("Dir %d", dir);
     int dx = 10;
 	int dy = 10;
 

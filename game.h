@@ -37,12 +37,14 @@ typedef enum {
 } GameState;
 
 typedef enum {
-    KEY_PLANE_FORWARD = 1,
-    KEY_PLANE_BACK = 2,
-    KEY_PLANE_LEFT = 3,
-    KEY_PLANE_RIGHT = 4,
-    KEY_PLANE_MISSILE = 5,
-    KEY_GAME_RESET = 6
+    KEY_MINIMUM =0,
+    KEY_PLANE_LEFT = 1,
+    KEY_PLANE_RIGHT = 2,
+    KEY_PLANE_BACK = 3,
+    KEY_PLANE_FORWARD = 4,
+    KEY_PLANE_BULLET = 5,
+    KEY_GAME_RESET = 6,
+    KEY_MAX_VALUE =7,
 } KeyMap;
 
 void _Delay(int ms);

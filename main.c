@@ -52,7 +52,7 @@ void Task_Key_Handle(void *para) //Move Plane
 	int key_value;
 	unsigned int timeout;
 	for(;;){
-	    Uart_Printf("Task2_1\n");
+	    // Uart_Printf("Task2_1\n");
 
 		if(game_state_flag != GAME_PLAYING) continue;
 		while(!Is_Queue_Empty(current_tcb->task_message_q)){	
@@ -65,7 +65,7 @@ void Task_Key_Handle(void *para) //Move Plane
 				case KEY_PLANE_RIGHT:
 					Game_Plane_Move(node->data);
 					break;
-				case KEY_PLANE_MISSILE:
+				case KEY_PLANE_BULLET:
 					Game_Bullet_Generation();
 					break;
 				case KEY_GAME_RESET:
@@ -103,7 +103,7 @@ void Task_2_2(void *para) //Generate Missile
 	
 	volatile int i =0;
 	for(;;){
-   		Uart_Printf("Task2_2\n");
+   		// Uart_Printf("Task2_2\n");
 		if(game_state_flag != 1) continue;
 		Game_Missile_Generation();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -115,7 +115,7 @@ void Task_2_3(void *para) //Move Missile
 {
 	for(;;)
 	{
-   		Uart_Printf("Task2_3\n");
+   		// Uart_Printf("Task2_3\n");
 		if(game_state_flag != 1) continue;
 		Game_Missile_Move();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
@@ -128,7 +128,7 @@ void Task_4_2(void *para) //LCD Print
 {
 	volatile int i =0;
 	for(;;){
-   		Uart_Printf("Task4_2\n");
+   		// Uart_Printf("Task4_2\n");
 
 		Draw_LCD();
 		if(current_tcb->state !=TASK_STATE_BLOCKED)
