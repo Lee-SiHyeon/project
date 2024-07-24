@@ -283,10 +283,6 @@ void Draw_LCD(void)
                 if(Check_Collision(&plane, &missile[i]))
                 {
                     game_state_flag = GAME_OVER;
-<<<<<<< Updated upstream
-                	//Uart_Printf("plane and missile Collision \n");
-=======
->>>>>>> Stashed changes
                     return;
                 }
                     
