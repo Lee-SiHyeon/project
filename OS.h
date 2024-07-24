@@ -40,6 +40,13 @@ typedef enum {
 	Printf,
 }Blocked_Reason;
 
+typedef enum{
+	WR_MIN,
+	WR_BY_SET_BLOCK_TIMER,
+	WR_BY_SIGNALING,
+	WR_BY_MUTEX,
+	WR_MAX
+}Wakeup_Reason;
 /* [ Type ] */
 typedef struct _signal{
 	int tcb_idx;
@@ -56,6 +63,7 @@ typedef struct _tcb{
 	Queue* task_message_q;
 	int blocked_mutex_id;
 	unsigned int mutex_time;
+	char wakeup_reason;
 }TCB;
 
 typedef struct {

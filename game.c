@@ -53,7 +53,11 @@ GameObject missile[MAX_MISSILE];
 int score;
 int game_state_flag;
 int plane_move_flag;
+extern TCB* current_tcb;
+int missile_cnt;
 
+extern char LCD_bullet_missile_flag;
+extern volatile int tim4_timeout_cnt;
 void _Delay(int ms)
 {
 	volatile int i;
@@ -64,7 +68,9 @@ void Draw_Plane() {
     int x, y;
 
     int i=0;
-
+    while(!plane_move_flag);
+    plane_move_flag =0;
+    Clear_Image(&plane);
     for(;i<168;i++){
         x = plane.x+Plane[i][1];
         y = plane.y+Plane[i][0];
@@ -72,6 +78,7 @@ void Draw_Plane() {
         Lcd_Set_Windows(x, y, x, y);
         Lcd_Write_Data_16Bit(PLANE_COLOR);
     }
+    plane_move_flag =1;
 }
 
 void Draw_Image(GameObject *obj) {
@@ -123,16 +130,13 @@ void Game_Init(void)
 	plane.is_used = 1;
 
 	score = 0;
-
-    if (game_state_flag != GAME_PLAYING)
-        game_state_flag = GAME_START;
-    
     plane_move_flag = 1;
-
+    missile_cnt =5;
     Game_Missile_Clear();
     Game_Bullet_Clear();
 
 	Lcd_Clr_Screen();
+    Draw_Plane();
 }
 
 void Game_Missile_Clear(void)
@@ -149,7 +153,7 @@ void Game_Missile_Clear(void)
 void Game_Missile_Generation(void)
 {
     int i;
-    for(i = 0; i < MAX_MISSILE; i++)
+    for(i = 0; i < missile_cnt; i++)
     {
         if(missile[i].is_used == 0)
         {
@@ -197,8 +201,8 @@ void Game_Plane_Move(int dir)
     // Uart_Printf("Dir %d", dir);
     int dx = 10;
 	int dy = 10;
-
-    plane_move_flag = 1;
+    while(!plane_move_flag);
+    plane_move_flag = 0;
 
     plane.prev_x = plane.x;
     plane.prev_y = plane.y;
@@ -217,13 +221,14 @@ void Game_Plane_Move(int dir)
 			if(plane.x <= 300) plane.x += dx;
 			break;
 	}
+    plane_move_flag =1;
 }
 
 void Game_Missile_Move(void)
 {
     int i;
     int dx = -MISSILE_SPEED;
-    for(i = 0; i < MAX_MISSILE; i++)
+    for(i = 0; i < missile_cnt; i++)
     {
         if (missile[i].is_used == 0)
             continue;
@@ -232,11 +237,13 @@ void Game_Missile_Move(void)
 
         missile[i].x += dx;
 
-        if(missile[i].x <= 0)
+        if(missile[i].x <= 20)
         {
             Clear_Image(&missile[i]);
             missile[i].x = 0;
             missile[i].y = 0;
+            missile[i].prev_x = 0;
+            missile[i].prev_y = 0;
             missile[i].is_used = 0;
         }
     }
@@ -285,103 +292,149 @@ int Check_Collision(GameObject* object1, GameObject* object2) {
 
 void Draw_LCD(void)
 {
-    int index, count;
-    volatile int i, j;
+    int index, count, i, j;
 
-	if(game_state_flag == GAME_START){
-        Game_BGM_Sound();
-        Draw_BorderLine(BLUE);
-		Draw_Start_Text();
-        _Delay(300);
-        Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
-		_Delay(300);
-	}
-
-	else if(game_state_flag==GAME_PLAYING){
-        Game_Missile_Move();
-        Game_Bullet_Move();
-
-        // 미사일과 비행기 충돌 여부
-        for(i = 0; i < MAX_MISSILE; i++)
-        {
-            if (missile[i].is_used == 1)
+    switch (game_state_flag){
+        case GAME_USER_WAIT:
+        //  표지 화면 띄우기 ( 유저 SW1 버튼 누르는거 대기)
+			Game_BGM_Sound();
+			Draw_BorderLine(BLUE);
+			Draw_Start_Text();
+        	Draw_BorderLine(BLUE);
+            _Delay(300);
+        	Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
+			_Delay(300);
+            break;
+        case GAME_READY_TO_PLAY:
+            Game_Init();
+            Game_Change_State(GAME_PLAYING);
+        case GAME_PLAYING:
+            // control by TIM4_IRQHandler
+            if(LCD_bullet_missile_flag == 1)
             {
-                if(Check_Collision(&plane, &missile[i]))
-                {
-                    game_state_flag = GAME_OVER;
-            		Lcd_Clr_Screen();
-                    return;
+                if(tim4_timeout_cnt %10==1){
+                    if (missile_cnt < MAX_MISSILE){
+                        missile_cnt++;
+                    }
+                    Game_Missile_Generation();
                 }
-                    
+                LCD_bullet_missile_flag =0;
+                // Uart_Printf("WR_BY_SET_BLOCK_TASK\n");
+                Game_Missile_Move();
+                Game_Bullet_Move();
+                // bullet draw
+                for(i = 0; i < MAX_BULLET; i++)
+                {
+                    if(bullet[i].is_used == 1)
+                    {
+                        Clear_Image(&bullet[i]);
+                        Draw_Image(&bullet[i]);
+                    }
+                }
+                // missile draw
+                for(i = 0; i < missile_cnt; i++)
+                {
+                    if(missile[i].is_used == 1)
+                    {
+                        Clear_Image(&missile[i]);
+                        Draw_Image(&missile[i]);
+                    }
+                }
             }
-        }
-
-        // 미사일과 총알 충돌 여부
-        for(i = 0; i < MAX_MISSILE; i++)
-        {
-            if(missile[i].is_used == 0)
-                continue;
-            for(j = 0; j < MAX_BULLET; j++)
+            if((current_tcb->wakeup_reason == WR_MIN)          || \
+               (current_tcb->wakeup_reason == WR_BY_SIGNALING))
             {
-                if(bullet[j].is_used == 0)
+                // draw plane when only receive the SIGNAL by key_handler_task
+                // 비행기 draw    
+                Draw_Plane();
+            }
+            
+            // 미사일과 비행기 충돌 여부
+            for(i = 0; i < missile_cnt; i++)
+            {
+                if (missile[i].is_used == 1)
+                {
+                    if(Check_Collision(&plane, &missile[i]))
+                    {
+                        Game_Change_State(GAME_OVER);
+                        Uart_Printf("plane and missile Collision \n");
+                        return;
+                    }
+                        
+                }
+            }
+
+            // // 미사일과 총알 충돌 여부
+            for(i = 0; i < missile_cnt; i++)
+            {
+                if(missile[i].is_used == 0)
                     continue;
-                if (Check_Collision(&missile[i], &bullet[j]))
+                for(j = 0; j < MAX_BULLET; j++)
                 {
-                    missile[i].prev_x = missile[i].x;
-                    missile[i].prev_y = missile[i].y;
-                    Clear_Image(&missile[i]);
-                    
-                    bullet[j].prev_x = bullet[j].x;
-                    bullet[j].prev_y = bullet[j].y;
-                    Clear_Image(&bullet[j]);
+                    if(bullet[j].is_used == 0)
+                        continue;
+                    if (Check_Collision(&missile[i], &bullet[j]))
+                    {
+                        missile[i].prev_x = missile[i].x;
+                        missile[i].prev_y = missile[i].y;
+                        Clear_Image(&missile[i]);
+                        bullet[j].prev_x = bullet[j].x;
+                        bullet[j].prev_y = bullet[j].y;
+                        Clear_Image(&bullet[j]);
 
-                    missile[i].x = 0;
-                    missile[i].y = 0;
-                    missile[i].is_used = 0;
+                        missile[i].x = 0;
+                        missile[i].y = 0;
+                        missile[i].is_used = 0;
 
-                    bullet[j].x = 0;
-                    bullet[j].y = 0;
-                    bullet[j].is_used = 0;
+                        bullet[j].x = 0;
+                        bullet[j].y = 0;
+                        bullet[j].is_used = 0;
+                    }
                 }
             }
-        }
-
-        // 비행기 draw
-        if(plane_move_flag) {
-            Clear_Image(&plane);
-            Draw_Plane();
-			plane_move_flag = 0;
-		}
-
-        // missile draw
-        for(i = 0; i < MAX_MISSILE; i++)
-        {
-            if(missile[i].is_used == 1)
-            {
-                Clear_Image(&missile[i]);
-                Draw_Image(&missile[i]);
-            }
-        }
-
-       // bullet draw
-        for(i = 0; i < MAX_BULLET; i++)
-        {
-            if(bullet[i].is_used == 1)
-            {
-                Clear_Image(&bullet[i]);
-                Draw_Image(&bullet[i]);
-            }
-        }
-	}
-
-	else if(game_state_flag==GAME_OVER){
+            break;
+        case GAME_OVER:
+        //GAME_OVER화면 띄우고 USER 반응 대기. ( reset button)
         Game_Over_Sound();
         Draw_BorderLine(RED);
         Draw_Game_Over_Text();
 		_Delay(300);
         Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
 		_Delay(300);
-	}
+
+            break;
+        default:
+            break;
+    }
+}
+
+void Game_Change_State(char next_state)
+{
+
+    switch (game_state_flag){
+        case GAME_USER_WAIT:
+        case GAME_READY_TO_PLAY:
+        case GAME_PLAYING:
+        case GAME_OVER:
+            game_state_flag = next_state;
+            break;
+        default:
+            break;
+    }
+    return;
+}
+
+void Game_SW1_Set_Next_State(void){
+    switch (game_state_flag){
+        case GAME_USER_WAIT:
+            game_state_flag = GAME_READY_TO_PLAY;
+            break;
+        case GAME_PLAYING:
+        case GAME_OVER:
+            game_state_flag = GAME_USER_WAIT;
+            break;
+    }
+    return;
 }
 
 void Game_BGM_Sound(void){

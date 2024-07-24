@@ -308,7 +308,7 @@ void EXTI3_IRQHandler(void)
 {
 	// Up
 	EXTI->PR |= (1<<3);
-	NVIC_ClearPendingIRQ(EXTI3_IRQn);
+
 
 	key_value = 1;
 
@@ -319,6 +319,7 @@ void EXTI3_IRQHandler(void)
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
 	key_value = 0;
+	NVIC_ClearPendingIRQ(EXTI3_IRQn);
 }
 
 /*******************************************************************************
@@ -494,7 +495,7 @@ void EXTI9_5_IRQHandler(void)
 
 	// Pending Clear
 	EXTI->PR = (0x7<<5);
-	NVIC_ClearPendingIRQ(23);
+
 
 	key_value = EXTI9_5_LUT[kv];
 
@@ -505,6 +506,7 @@ void EXTI9_5_IRQHandler(void)
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
 	key_value = 0;
+	NVIC_ClearPendingIRQ(23);
 }
 
 /*******************************************************************************
@@ -589,13 +591,18 @@ void TIM3_IRQHandler(void)
  * Return         : None
  *******************************************************************************/
 
-volatile int tim4_timeout;
+volatile char LCD_bullet_missile_flag;
+volatile int tim4_timeout_cnt=0;
 void TIM4_IRQHandler(void)
 {
 	Macro_Clear_Bit(TIM4->SR, 0);
+	if(LCD_bullet_missile_flag==0){
+		LCD_bullet_missile_flag =1;
+	}
+	
+	tim4_timeout_cnt++;
 	NVIC_ClearPendingIRQ(TIM4_IRQn);
 
-	tim4_timeout = 1;
 }
 
 /*******************************************************************************
@@ -702,10 +709,12 @@ void USART1_IRQHandler(void)
 		case 'r':
 			uart_data.data = KEY_GAME_RESET;
 			break;
+		case 'o':
+			uart_data.data = 7;
 		default:
 			break;
 	}
-	if (KEY_MINIMUM <uart_data.data && uart_data.data <KEY_MAX_VALUE ){
+	if (KEY_MINIMUM <uart_data.data && uart_data.data <=KEY_MAX_VALUE ){
 		uart_data.tcb_idx = 1;
 		Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);	
 	} 
@@ -748,7 +757,7 @@ void EXTI15_10_IRQHandler(void)
 {
 	int kv = Macro_Extract_Area(EXTI->PR, 0x3, 13);
 	EXTI->PR |= (0x3<<13);
-	NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
+
 
 	key_value = EXTI15_10_LUT[kv];
 
@@ -768,6 +777,7 @@ void EXTI15_10_IRQHandler(void)
 	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
 	key_value = 0;
+	NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 }
 
 /*******************************************************************************

@@ -19,11 +19,11 @@
 #define DIGIT_WIDTH         10
 #define DIGIT_HEIGHT        14
 
-#define MAX_MISSILE         7
-#define MISSILE_SPEED       2
+#define MAX_MISSILE         20
+#define MISSILE_SPEED       5
 
-#define MAX_BULLET          10
-#define BULLET_SPEED        4
+#define MAX_BULLET          1
+#define BULLET_SPEED        5
 
 typedef struct {
     unsigned short x, y;
@@ -34,9 +34,10 @@ typedef struct {
 } GameObject;
 
 typedef enum {
-    GAME_START = 0,
-    GAME_PLAYING = 1,
-    GAME_OVER = 2
+    GAME_USER_WAIT = 0,
+    GAME_READY_TO_PLAY =1,
+    GAME_PLAYING = 2,
+    GAME_OVER = 3
 } GameState;
 
 typedef enum {
@@ -79,4 +80,6 @@ void Game_Over_Sound(void);
 
 void playSound(unsigned short frequency, unsigned short duration);
 
+void Game_Change_State(char next_state);
+void Game_SW1_Set_Next_State(void);
 #endif

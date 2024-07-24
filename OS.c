@@ -153,6 +153,7 @@ int OS_Create_Task_Simple(void(*ptask)(void*), void* para, int prio, \
 	ptcb->next = 0;
 	ptcb->wakeup_target_time = 0;
 	ptcb->mutex_time=0;
+	ptcb->wakeup_reason =-1;
     if (ptcb->prio < 0 || ptcb->prio >= MAX_PRIORITY)
         return 0;
     Enqueue(ready_Queues[ptcb->prio], ptcb, TCB_PTR);
@@ -180,6 +181,7 @@ void OS_Scheduler_Start(void)
 	}
 	mutex_is_init = 1;
 	SysTick_OS_Tick(SYSTICK);
+	TIM4_Repeat_Interrupt_Enable(1, 200);
 	_OS_Start_First_Task();
 }
 
@@ -230,6 +232,7 @@ void _OS_Scheduler_Restore_Expired_TCB(void){
 		{
 			tcb[i].state = TASK_STATE_READY;
 			tcb[i].wakeup_target_time =0;
+			tcb[i].wakeup_reason =WR_BY_SET_BLOCK_TIMER;
 			Enqueue(ready_Queues[tcb[i].prio], &tcb[i], TCB_PTR);
 		}
 	}
@@ -249,6 +252,7 @@ void _OS_Scheduler_Handle_Signaling_Flag(void){
 		switch(tcb[tcb_idx].state){
 			case TASK_STATE_BLOCKED:
 				tcb[tcb_idx].state = TASK_STATE_READY;
+				tcb[tcb_idx].wakeup_reason = WR_BY_SIGNALING;
 				Enqueue(ready_Queues[tcb[tcb_idx].prio], &tcb[tcb_idx], TCB_PTR);
 				break;
 		}
@@ -390,6 +394,7 @@ void OS_Mutex_Unlock(TCB* request_task, int mutex_idx) {
 		tcb[wakeup_task_no].state = TASK_STATE_READY;
 		tcb[wakeup_task_no].blocked_mutex_id = -1;
 		tcb[wakeup_task_no].mutex_time = 0;
+		tcb[wakeup_task_no].wakeup_reason = WR_BY_MUTEX;
 		mutexs[mutex_idx].owner =wakeup_task_no;
 		Enqueue(ready_Queues[tcb[wakeup_task_no].prio], &tcb[wakeup_task_no], TCB_PTR);
 	}else{

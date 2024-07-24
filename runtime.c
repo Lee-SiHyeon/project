@@ -26,7 +26,6 @@ void System_Init(void)
 	Uart1_RX_Interrupt_Enable(1); // Uart1 RX �̺�Ʈ interrupt Ȱ��ȭ
 	Key_Poll_Init();	// Key(LCD ������ Ű) �ʱ�ȭ
 	Key_ISR_Enable(1);	// Key push �̺�Ʈ  interrupt Ȱ��ȭ
-	TIM4_Repeat_Interrupt_Enable(1, 5000);
 	Lcd_Init();	// LCD �ʱ�ȭ
 	LED_Init();	// LED �ʱ�ȭ
 	TIM3_Out_Init();
