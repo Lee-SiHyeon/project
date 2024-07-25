@@ -56,6 +56,7 @@ int plane_move_flag;
 extern TCB* current_tcb;
 int missile_cnt;
 
+char str[20];
 extern char LCD_bullet_missile_flag;
 extern volatile int tim4_timeout_cnt;
 void _Delay(int ms)
@@ -106,6 +107,12 @@ void Draw_Start_Text() {
     int startY = 13;
     LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, "PYONG", 1, 3);
     LCD_Show_String_Scaled(startX - 50, startY, WHITE, BLACK , 16, "PYONG", 1, 3);
+}
+
+void Draw_Score(char* str) {
+    int startX = 210;
+    int startY = 13;
+    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, str, 1, 1);
 }
 
 void Draw_Game_Over_Text() {
@@ -309,6 +316,8 @@ void Draw_LCD(void)
             Game_Init();
             Game_Change_State(GAME_PLAYING);
         case GAME_PLAYING:
+            intToStr(score, str);
+            Draw_Score(str);
             // control by TIM4_IRQHandler
             if(LCD_bullet_missile_flag == 1)
             {
@@ -465,4 +474,46 @@ void playSound(unsigned short frequency, unsigned short duration) {
     TIM3_Out_Freq_Generation(frequency);
     _Delay(duration);
     TIM3_Out_Stop();
+}
+
+void reverse(char* str, int len) {
+    int start = 0;
+    int end = len - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+int intToStr(int num, char* str) {
+    int i = 0;
+    int isNegative = 0;
+
+    // Handle negative numbers
+    if (num < 0) {
+        isNegative = 1;
+        num = -num;
+    }
+
+    // Process individual digits
+    do {
+        str[i++] = (num % 10) + '0';
+        num = num / 10;
+    } while (num != 0);
+
+    // If the number was negative, add the minus sign
+    if (isNegative) {
+        str[i++] = '-';
+    }
+
+    // Null-terminate the string
+    str[i] = '\0';
+
+    // Reverse the string
+    reverse(str, i);
+
+    return i;
 }
