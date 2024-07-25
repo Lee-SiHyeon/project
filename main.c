@@ -187,7 +187,7 @@ void Main(void)
 
 	OS_Create_Task_Simple(Task_Idle, (void*)0, 4, 128, sizeof(Node), 1); // Move Plane 
 
-	OS_Create_Task_Simple(Task_Key_Handle, (void*)0,0, 2048, sizeof(Node), 10); // Move Plane
+	OS_Create_Task_Simple(Task_Key_Handle, (void*)0,0, 2048, sizeof(Node), 1); // Move Plane
 	OS_Create_Task_Simple(Task_Draw_LCD, (void*)0, 0, 2048, sizeof(Node), 5); // LCD Print
 	// OS_Create_Task_Simple(Task_Generate_Missile, (void*)0, 3, 1024, sizeof(Node), 10); // Generate Missile //erase
 
