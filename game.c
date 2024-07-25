@@ -120,11 +120,16 @@ void Draw_Score(char* str) {
     LCD_Show_String_Scaled(startX, startY-25, WHITE, BLACK , 16, str, 1, 1);
 }
 
+void Draw_Score_OVER(char* str) {
+    LCD_Show_String_Scaled(110, 80, WHITE, BLACK , 16, str, 1, 3);
+}
+
 void Draw_Game_Over_Text() {
     int startX = 210;
     int startY = 33;
     LCD_Show_String_Scaled(startX, startY, RED, BLACK , 16, "GAME", 1, 3);
     LCD_Show_String_Scaled(startX - 50, startY, RED, BLACK , 16, "OVER", 1, 3);
+    
 }
 
 void Clear_Image(GameObject *obj) {
@@ -447,6 +452,7 @@ void Draw_LCD(void)
         Game_Over_Sound();
         Draw_BorderLine(RED);
         Draw_Game_Over_Text();
+        Draw_Score_OVER(buffer);
 		_Delay(300);
         Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
 		_Delay(300);
