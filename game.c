@@ -247,6 +247,7 @@ void Game_Bullet_Generation(void)
 void Game_Plane_Move(int dir)
 {
     // Uart_Printf("Dir %d", dir);
+    if(game_state_flag != GAME_PLAYING) return;
     int dx = 10;
 	int dy = 10;
     while(!plane_move_flag);
