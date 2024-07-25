@@ -8,7 +8,7 @@
 #define PLANE_H 			24
 #define PLANE_COLOR			0x55D
 
-// #define ONLY_MOVING_GAME
+#define ONLY_MOVING_GAME
 #define MISSILE_W			6
 #define MISSILE_H			6
 #define MISSILE_COLOR		0xFBE4

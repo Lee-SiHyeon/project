@@ -69,11 +69,6 @@ void _Delay(int ms)
 	volatile int i;
 	for(i=0;i<(0x1000*ms);i++);
 }
-void Draw_Score(char* str) {
-    int startX = 210;
-    int startY = 13;
-    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, str, 1, 1);
-}
 void Draw_Plane() {
     int x, y;
 
@@ -119,9 +114,10 @@ void Draw_Start_Text() {
 }
 
 void Draw_Score(char* str) {
-    int startX = 210;
-    int startY = 13;
-    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, str, 1, 1);
+    int startX = 315;
+    int startY = 225;
+    Lcd_Draw_Box(startX-14, startY-25, 20, 40, BLACK); // 고정
+    LCD_Show_String_Scaled(startX, startY-25, WHITE, BLACK , 16, str, 1, 1);
 }
 
 void Draw_Game_Over_Text() {
@@ -357,8 +353,6 @@ void Draw_LCD(void)
             Game_Change_State(GAME_PLAYING);
             
         case GAME_PLAYING:
-            intToStr(score, str);
-            Draw_Score(str);
             // control by TIM4_IRQHandler
             if(LCD_bullet_missile_flag == 1)
             {
