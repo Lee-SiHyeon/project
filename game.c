@@ -55,15 +55,25 @@ int game_state_flag;
 int plane_move_flag;
 extern TCB* current_tcb;
 int missile_cnt;
-
+int max_gung;
+char buffer[5] = {0,};
+int game_start_time;
 extern char LCD_bullet_missile_flag;
 extern volatile int tim4_timeout_cnt;
+
+void reverse(char* str, int len);
+int intToStr(int num, char* str);
+
 void _Delay(int ms)
 {
 	volatile int i;
 	for(i=0;i<(0x1000*ms);i++);
 }
-
+void Draw_Score(char* str) {
+    int startX = 210;
+    int startY = 13;
+    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, str, 1, 1);
+}
 void Draw_Plane() {
     int x, y;
 
@@ -132,9 +142,10 @@ void Game_Init(void)
 	score = 0;
     plane_move_flag = 1;
     missile_cnt =5;
+    max_gung =1;
     Game_Missile_Clear();
     Game_Bullet_Clear();
-
+    game_start_time =0;
 	Lcd_Clr_Screen();
     Draw_Plane();
 }
@@ -153,6 +164,7 @@ void Game_Missile_Clear(void)
 void Game_Missile_Generation(void)
 {
     int i;
+    int dx;
     for(i = 0; i < missile_cnt; i++)
     {
         if(missile[i].is_used == 0)
@@ -162,6 +174,11 @@ void Game_Missile_Generation(void)
             missile[i].prev_x = 0;
             missile[i].prev_y = 0;
             missile[i].is_used = 1;
+            dx = rand() %15;
+            if (dx <=7){
+                dx = 8;
+            }
+            missile[i].dx = dx;
         }
     }
 }
@@ -177,9 +194,32 @@ void Game_Bullet_Clear(void)
         bullet[i].is_used = 0;
     }
 }
+
 void Game_Bullet_Generation(void)
 {
     volatile int i;
+#ifdef ONLY_MOVING_GAME
+    if(max_gung>=1){
+        __disable_irq();
+        Lcd_Draw_Box(5, 5, Lcd_W - 10, Lcd_H - 10, BLACK);
+        Draw_Plane();
+        for(i = 0; i < missile_cnt; i++)
+        {
+            if(missile[i].is_used == 1)
+            {
+                missile[i].x = 0;
+                missile[i].y = 0;
+                missile[i].is_used = 0;
+            }
+        }
+          __enable_irq();
+          max_gung--;
+    }else{
+        return;
+    }
+
+#else
+    
     for(i = 0; i < MAX_BULLET; i++)
     {
         if(bullet[i].is_used == 0)
@@ -194,6 +234,7 @@ void Game_Bullet_Generation(void)
             break;
         }
     }
+#endif
 }
 
 void Game_Plane_Move(int dir)
@@ -206,7 +247,7 @@ void Game_Plane_Move(int dir)
 
     plane.prev_x = plane.x;
     plane.prev_y = plane.y;
-
+    
 	switch(dir){ //1-left, 2-right, 3-down, 4-up
 		case 1:
 			if(plane.y >= 15) plane.y -= dy;
@@ -227,7 +268,6 @@ void Game_Plane_Move(int dir)
 void Game_Missile_Move(void)
 {
     int i;
-    int dx = -MISSILE_SPEED;
     for(i = 0; i < missile_cnt; i++)
     {
         if (missile[i].is_used == 0)
@@ -235,7 +275,7 @@ void Game_Missile_Move(void)
         missile[i].prev_x = missile[i].x;
         missile[i].prev_y = missile[i].y;
 
-        missile[i].x += dx;
+        missile[i].x -= missile[i].dx;
 
         if(missile[i].x <= 20)
         {
@@ -245,6 +285,7 @@ void Game_Missile_Move(void)
             missile[i].prev_x = 0;
             missile[i].prev_y = 0;
             missile[i].is_used = 0;
+            missile[i].dx = 0;
         }
     }
 }
@@ -308,6 +349,7 @@ void Draw_LCD(void)
         case GAME_READY_TO_PLAY:
             Game_Init();
             Game_Change_State(GAME_PLAYING);
+            
         case GAME_PLAYING:
             // control by TIM4_IRQHandler
             if(LCD_bullet_missile_flag == 1)
@@ -316,6 +358,9 @@ void Draw_LCD(void)
                     if (missile_cnt < MAX_MISSILE){
                         missile_cnt++;
                     }
+                    game_start_time++;
+                    intToStr(game_start_time, buffer);
+                    Draw_Score(buffer);
                     Game_Missile_Generation();
                 }
                 LCD_bullet_missile_flag =0;
@@ -363,8 +408,9 @@ void Draw_LCD(void)
                         
                 }
             }
-
+           
             // // 미사일과 총알 충돌 여부
+#ifndef ONLY_MOVING_GAME
             for(i = 0; i < missile_cnt; i++)
             {
                 if(missile[i].is_used == 0)
@@ -392,6 +438,7 @@ void Draw_LCD(void)
                     }
                 }
             }
+#endif
             break;
         case GAME_OVER:
         //GAME_OVER화면 띄우고 USER 반응 대기. ( reset button)
@@ -465,4 +512,46 @@ void playSound(unsigned short frequency, unsigned short duration) {
     TIM3_Out_Freq_Generation(frequency);
     _Delay(duration);
     TIM3_Out_Stop();
+}
+
+void reverse(char* str, int len) {
+    int start = 0;
+    int end = len - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+int intToStr(int num, char* str) {
+    int i = 0;
+    int isNegative = 0;
+
+    // Handle negative numbers
+    if (num < 0) {
+        isNegative = 1;
+        num = -num;
+    }
+
+    // Process individual digits
+    do {
+        str[i++] = (num % 10) + '0';
+        num = num / 10;
+    } while (num != 0);
+
+    // If the number was negative, add the minus sign
+    if (isNegative) {
+        str[i++] = '-';
+    }
+
+    // Null-terminate the string
+    str[i] = '\0';
+
+    // Reverse the string
+    reverse(str, i);
+
+    return i;
 }

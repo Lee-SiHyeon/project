@@ -8,6 +8,7 @@
 #define PLANE_H 			24
 #define PLANE_COLOR			0x55D
 
+// #define ONLY_MOVING_GAME
 #define MISSILE_W			6
 #define MISSILE_H			6
 #define MISSILE_COLOR		0xFBE4
@@ -19,18 +20,26 @@
 #define DIGIT_WIDTH         10
 #define DIGIT_HEIGHT        14
 
+
+#ifdef ONLY_MOVING_GAME
+#define MAX_MISSILE         50
+#define MISSILE_SPEED       5
+#define MAX_BULLET          0
+#define BULLET_SPEED        5
+#else
 #define MAX_MISSILE         20
 #define MISSILE_SPEED       5
 
-#define MAX_BULLET          1
+#define MAX_BULLET          10
 #define BULLET_SPEED        5
-
+#endif
 typedef struct {
     unsigned short x, y;
     unsigned short prev_x, prev_y;
     unsigned short width, height;
     const int **image;
     unsigned char is_used;
+    unsigned char dx;
 } GameObject;
 
 typedef enum {

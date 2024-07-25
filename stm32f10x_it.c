@@ -29,7 +29,8 @@
 #include "game.h"
 
 extern Queue* signaling_Queue;
-
+volatile unsigned int prev_interrupt_time;
+volatile unsigned int now_interrupt_time;
 void Invalid_ISR(void)
 {
   Uart1_Printf("Invalid_Exception: %d!\n", Macro_Extract_Area(SCB->ICSR, 0x1ff, 0));
@@ -306,20 +307,24 @@ void EXTI2_IRQHandler(void)
 volatile int key_value;
 void EXTI3_IRQHandler(void)
 {
-	// Up
-	EXTI->PR |= (1<<3);
+	now_interrupt_time = sys_cnt;
+	if (now_interrupt_time - prev_interrupt_time< 100){
+		NVIC_ClearPendingIRQ(EXTI3_IRQn);
+	}else{
+		// Up
+		EXTI->PR |= (1<<3);
 
+		key_value = 1;
 
-	key_value = 1;
+		static Signal_st key_input_data;
+		if(key_value==1) key_input_data.data = 1; //joy stick: left
+		key_input_data.tcb_idx = 1; //
 
-	static Signal_st key_input_data;
-	if(key_value==1) key_input_data.data = 1; //joy stick: left
-	key_input_data.tcb_idx = 1; //
+		Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
-	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
-
-	key_value = 0;
-	NVIC_ClearPendingIRQ(EXTI3_IRQn);
+		key_value = 0;
+		NVIC_ClearPendingIRQ(EXTI3_IRQn);
+	}
 }
 
 /*******************************************************************************
@@ -491,22 +496,27 @@ void CAN_SCE_IRQHandler(void)
 int EXTI9_5_LUT[8] = {0,2,3,0,4,0,0,0};
 void EXTI9_5_IRQHandler(void)
 {
+	now_interrupt_time = sys_cnt;
 	int kv = Macro_Extract_Area(EXTI->PR,0x7,5);
+	if (now_interrupt_time - prev_interrupt_time< 100){
+		NVIC_ClearPendingIRQ(23);
+	}else{
+		// Pending Clear
+		EXTI->PR = (0x7<<5);
 
-	// Pending Clear
-	EXTI->PR = (0x7<<5);
 
+		key_value = EXTI9_5_LUT[kv];
 
-	key_value = EXTI9_5_LUT[kv];
+		static Signal_st key_input_data;
+		if(key_value) key_input_data.data = key_value; //joy stick: 2-right, 3-down, 4-up
+		key_input_data.tcb_idx = 1; //
 
-	static Signal_st key_input_data;
-	if(key_value) key_input_data.data = key_value; //joy stick: 2-right, 3-down, 4-up
-	key_input_data.tcb_idx = 1; //
+		Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
-	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
-
-	key_value = 0;
-	NVIC_ClearPendingIRQ(23);
+		key_value = 0;
+		NVIC_ClearPendingIRQ(23);
+	}
+	
 }
 
 /*******************************************************************************
@@ -689,36 +699,41 @@ volatile char uart_rx_data;
 void USART1_IRQHandler(void)
 {
 	static Signal_st uart_data;
-	uart_rx_data = USART1->DR;
-	switch (uart_rx_data){
-		case 'w':
-			uart_data.data = KEY_PLANE_FORWARD;
-			break;
-		case 's':
-			uart_data.data = KEY_PLANE_BACK;
-			break;
-		case 'a':
-			uart_data.data = KEY_PLANE_LEFT;
-			break;
-		case 'd':
-			uart_data.data = KEY_PLANE_RIGHT;
-			break;
-		case 'k':
-			uart_data.data = KEY_PLANE_BULLET;
-			break;
-		case 'r':
-			uart_data.data = KEY_GAME_RESET;
-			break;
-		case 'o':
-			uart_data.data = 7;
-		default:
-			break;
+	now_interrupt_time = sys_cnt;
+	if (now_interrupt_time - prev_interrupt_time< 300){
+		NVIC_ClearPendingIRQ(USART1_IRQn);
+	}else{
+		uart_rx_data = USART1->DR;
+		switch (uart_rx_data){
+			case 'w':
+				uart_data.data = KEY_PLANE_FORWARD;
+				break;
+			case 's':
+				uart_data.data = KEY_PLANE_BACK;
+				break;
+			case 'a':
+				uart_data.data = KEY_PLANE_LEFT;
+				break;
+			case 'd':
+				uart_data.data = KEY_PLANE_RIGHT;
+				break;
+			case 'k':
+				uart_data.data = KEY_PLANE_BULLET;
+				break;
+			case 'r':
+				uart_data.data = KEY_GAME_RESET;
+				break;
+			case 'o':
+				uart_data.data = 7;
+			default:
+				break;
+		}
+		if (KEY_MINIMUM <uart_data.data && uart_data.data <=KEY_MAX_VALUE ){
+			uart_data.tcb_idx = 1;
+			Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);	
+		} 
+		NVIC_ClearPendingIRQ(USART1_IRQn);
 	}
-	if (KEY_MINIMUM <uart_data.data && uart_data.data <=KEY_MAX_VALUE ){
-		uart_data.tcb_idx = 1;
-		Enqueue(signaling_Queue,(void*)&uart_data,STRUCT_SIGNAL);	
-	} 
-	NVIC_ClearPendingIRQ(USART1_IRQn);
 }
 
 /*******************************************************************************
@@ -756,28 +771,29 @@ int EXTI15_10_LUT[4] = {0,5,6,0};
 void EXTI15_10_IRQHandler(void)
 {
 	int kv = Macro_Extract_Area(EXTI->PR, 0x3, 13);
-	EXTI->PR |= (0x3<<13);
+	now_interrupt_time = sys_cnt;
+	if (now_interrupt_time - prev_interrupt_time< 300){
+		NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
+	}else{
+		EXTI->PR |= (0x3<<13);
+		key_value = EXTI15_10_LUT[kv];
+		static Signal_st key_input_data;
+		if(key_value==5) // sw 0
+		{
+			key_input_data.data = 5; //reset key
+			key_input_data.tcb_idx = 1; // Game Reset&Start Task
 
+		}
+		else if(key_value == 6) // sw 1
+		{
+			key_input_data.data = 6; 
+			key_input_data.tcb_idx = 1; // Bullet_Task
+		}
+		Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
 
-	key_value = EXTI15_10_LUT[kv];
-
-
-	static Signal_st key_input_data;
-	if(key_value==5) // sw 0
-	{
-		key_input_data.data = 5; //reset key
-		key_input_data.tcb_idx = 1; // Game Reset&Start Task
-
+		key_value = 0;
+		NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 	}
-	else if(key_value == 6) // sw 1
-	{
-		key_input_data.data = 6; 
-		key_input_data.tcb_idx = 1; // Bullet_Task
-	}
-	Enqueue(signaling_Queue,(void*)&key_input_data,STRUCT_SIGNAL); //reset key input -> signaling Queue
-
-	key_value = 0;
-	NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 }
 
 /*******************************************************************************
