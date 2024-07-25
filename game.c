@@ -118,6 +118,12 @@ void Draw_Start_Text() {
     LCD_Show_String_Scaled(startX - 50, startY, WHITE, BLACK , 16, "PYONG", 1, 3);
 }
 
+void Draw_Score(char* str) {
+    int startX = 210;
+    int startY = 13;
+    LCD_Show_String_Scaled(startX, startY, WHITE, BLACK , 16, str, 1, 1);
+}
+
 void Draw_Game_Over_Text() {
     int startX = 210;
     int startY = 33;
@@ -351,6 +357,8 @@ void Draw_LCD(void)
             Game_Change_State(GAME_PLAYING);
             
         case GAME_PLAYING:
+            intToStr(score, str);
+            Draw_Score(str);
             // control by TIM4_IRQHandler
             if(LCD_bullet_missile_flag == 1)
             {

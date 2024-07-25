@@ -91,4 +91,6 @@ void playSound(unsigned short frequency, unsigned short duration);
 
 void Game_Change_State(char next_state);
 void Game_SW1_Set_Next_State(void);
+void reverse(char* str, int len);
+int intToStr(int num, char* str);
 #endif
